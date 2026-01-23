@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ student.student_name }}{% endblock %}
+{% block page_subtitle %}Student Profile{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:department_list' %}">Departments</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    {% if department %}
+    <a href="{% url 'students:batch_list' department.id %}">{{ department.name }}</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:student_list' department.id student.batch_year %}">{{ student.batch_year }}</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    {% endif %}
+    <span>{{ student.student_name }}</span>
+</div>
+
+<!-- Action Buttons Row -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    {% if department %}
+    <a href="{% url 'students:student_list' department.id student.batch_year %}" class="back-button" style="margin: 0;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Students
+    </a>
+    {% else %}
+    <a href="{% url 'students:department_list' %}" class="back-button" style="margin: 0;">
+        <i class="fa-solid fa-arrow-left"></i> Back
+    </a>
+    {% endif %}
+    
+    {% if can_edit %}
+    <a href="{% url 'students:student_edit' student.id %}" style="
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+        <i class="fa-solid fa-pen"></i> Edit Student
+    </a>
+    {% endif %}
+</div>
+
+<!-- Profile Header Card -->
+<div class="profile-header-card">
+    <div class="profile-avatar {% if student.gender == 'MALE' %}male{% else %}female{% endif %}">
+        <i class="fa-solid fa-{% if student.gender == 'MALE' %}mars{% else %}venus{% endif %}"></i>
+    </div>
+    <div class="profile-info">
+        <h2>{{ student.student_name }}</h2>
+        <p>{% if department %}{{ department.full_name }}{% endif %} | Batch {{ student.batch_year }}</p>
+        <div class="profile-badges">
+            {% if student.roll_number %}
+            <span class="badge badge-dark"><i class="fa-solid fa-id-card"></i> {{ student.roll_number }}</span>
+            {% endif %}
+            {% if student.register_number %}
+            <span class="badge badge-primary"><i class="fa-solid fa-hashtag"></i> {{ student.register_number }}</span>
+            {% endif %}
+            <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">{{ student.gender }}</span>
+            {% if student.hosteller %}
+            <span class="badge badge-green"><i class="fa-solid fa-building"></i> Hosteller</span>
+            {% else %}
+            <span class="badge badge-orange"><i class="fa-solid fa-home"></i> Day Scholar</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Info Cards Grid -->
+<div class="info-grid">
+    <!-- Personal Information -->
+    <div class="info-card">
+        <div class="info-card-header">
+            <i class="fa-solid fa-user"></i>
+            <h3>Personal Information</h3>
+        </div>
+        <div class="info-card-body">
+            <div class="info-row">
+                <span class="label">Full Name</span>
+                <span class="value">{{ student.student_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Gender</span>
+                <span class="value">
+                    <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">{{ student.gender }}</span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Date of Birth</span>
+                <span class="value">{{ student.date_of_birth|date:"d M Y"|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Blood Group</span>
+                <span class="value">
+                    {% if student.blood_group %}
+                    <span class="badge badge-red">{{ student.blood_group }}</span>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Aadhaar Number</span>
+                <span class="value">{{ student.aadhaar_number|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Religion</span>
+                <span class="value">{{ student.religion|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Community</span>
+                <span class="value">{{ student.community|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Caste</span>
+                <span class="value">{{ student.caste|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">District</span>
+                <span class="value">{{ student.district|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">First Graduate</span>
+                <span class="value">
+                    {% if student.first_graduate %}
+                    <span class="badge badge-green"><i class="fa-solid fa-check"></i> Yes</span>
+                    {% else %}
+                    <span class="badge badge-secondary">No</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="info-card">
+        <div class="info-card-header green">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <h3>Academic Information</h3>
+        </div>
+        <div class="info-card-body">
+            <div class="info-row">
+                <span class="label">Roll Number</span>
+                <span class="value">
+                    {% if student.roll_number %}
+                    <span class="badge badge-secondary">{{ student.roll_number }}</span>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Register Number</span>
+                <span class="value">
+                    {% if student.register_number %}
+                    <span class="badge badge-primary">{{ student.register_number }}</span>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">College Email</span>
+                <span class="value">
+                    {% if student.college_email %}
+                    <a href="mailto:{{ student.college_email }}" class="email-link">
+                        <i class="fa-solid fa-envelope"></i> {{ student.college_email }}
+                    </a>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Department</span>
+                <span class="value">{% if department %}{{ department.full_name }}{% else %}-{% endif %}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Course Type</span>
+                <span class="value">
+                    {% if student.course_type %}
+                    <span class="badge badge-primary">{{ student.course_type }}</span>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Batch Year</span>
+                <span class="value">{{ student.batch_year|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Academic Year (Joining)</span>
+                <span class="value">{{ student.academic_year_join|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Date of Admission</span>
+                <span class="value">{{ student.date_of_admission|date:"d M Y"|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Admission Quota</span>
+                <span class="value">
+                    {% if student.admission_quota %}
+                    <span class="badge badge-info">{{ student.admission_quota }}</span>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Hosteller Status</span>
+                <span class="value">
+                    {% if student.hosteller or student.is_hosteller %}
+                    <span class="badge badge-green"><i class="fa-solid fa-check"></i> Hosteller</span>
+                    {% else %}
+                    <span class="badge badge-orange"><i class="fa-solid fa-times"></i> Day Scholar</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="info-card">
+        <div class="info-card-header blue">
+            <i class="fa-solid fa-phone"></i>
+            <h3>Contact Information</h3>
+        </div>
+        <div class="info-card-body">
+            <div class="info-row">
+                <span class="label">Mobile Number</span>
+                <span class="value">
+                    {% if student.mobile_number %}
+                    <a href="tel:{{ student.mobile_number }}" class="phone-link">
+                        <i class="fa-solid fa-phone"></i> {{ student.mobile_number }}
+                    </a>
+                    {% else %}-{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Permanent Address</span>
+                <span class="value">{{ student.permanent_address|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent/Guardian Information -->
+    <div class="info-card">
+        <div class="info-card-header orange">
+            <i class="fa-solid fa-users"></i>
+            <h3>Parent/Guardian Information</h3>
+        </div>
+        <div class="info-card-body">
+            <div class="info-row">
+                <span class="label">Father's Name</span>
+                <span class="value">{{ student.father_name|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Father's Occupation</span>
+                <span class="value">{{ student.father_occupation|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mother's Name</span>
+                <span class="value">{{ student.mother_name|default:"-" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mother's Occupation</span>
+                <span class="value">{{ student.mother_occupation|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+    flex-wrap: wrap;
+}
+
+.breadcrumb-nav a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.breadcrumb-nav a:hover {
+    color: #2980b9;
+}
+
+.breadcrumb-nav i.fa-chevron-right {
+    font-size: 1rem;
+    color: #bdc3c7;
+}
+
+.breadcrumb-nav span {
+    color: #7f8c8d;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.back-button:hover {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+/* Profile Header Card */
+.profile-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-avatar.male {
+    color: #74b9ff;
+}
+
+.profile-avatar.female {
+    color: #fd79a8;
+}
+
+.profile-info h2 {
+    font-size: 2.8rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.profile-info p {
+    font-size: 1.4rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.5rem;
+}
+
+.profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.badge-dark {
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+}
+
+.badge-primary {
+    background: #3498db;
+    color: white;
+}
+
+.badge-secondary {
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.badge-blue {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.badge-pink {
+    background: #fce4ec;
+    color: #e91e63;
+}
+
+.badge-green {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+
+.badge-orange {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.badge-red {
+    background: #ffebee;
+    color: #f44336;
+}
+
+.badge-info {
+    background: #e0f7fa;
+    color: #00838f;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: #3498db;
+    color: white;
+}
+
+.info-card-header.green {
+    background: #27ae60;
+}
+
+.info-card-header.blue {
+    background: #2980b9;
+}
+
+.info-card-header.orange {
+    background: #f39c12;
+}
+
+.info-card-header i {
+    font-size: 2rem;
+}
+
+.info-card-header h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+}
+
+.info-card-body {
+    padding: 1.5rem 2rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 0;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row .label {
+    font-size: 1.3rem;
+    color: #7f8c8d;
+}
+
+.info-row .value {
+    font-size: 1.4rem;
+    color: #2c3e50;
+    font-weight: 500;
+    text-align: right;
+}
+
+.phone-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #27ae60;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.phone-link:hover {
+    color: #1e8449;
+}
+
+.email-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.email-link:hover {
+    color: #2980b9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-header-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile-badges {
+        justify-content: center;
+    }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .info-row .value {
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}

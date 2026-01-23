@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | ReconEdge</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://kit.fontawesome.com/49f3b85e32.js" crossorigin="anonymous"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <nav class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span>Admin AI</span>
+        </div>
+        <ul class="nav-links">
+            <li>
+                <a href="{% url 'home' %}" class="{% if active_page == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-grid-2"></i> Dashboard
+                </a>
+            </li>
+            {% if user_role != 'ADMIN' %}
+            <li>
+                <a href="{% url 'circular_gen' %}" class="{% if active_page == 'circulars' %}active{% endif %}">
+                    <i class="fa-solid fa-file-pdf"></i> Circulars
+                </a>
+            </li>
+            {% endif %}
+            <li>
+                <a href="{% url 'staff:department_list' %}" class="{% if active_page == 'staff' %}active{% endif %}">
+                    <i class="fa-solid fa-users"></i> Staff
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'students:department_list' %}" class="{% if active_page == 'students' %}active{% endif %}">
+                    <i class="fa-solid fa-user-graduate"></i> Students
+                </a>
+            </li>
+
+            <li style="margin-top: auto;">
+                <a href="{% url 'users:logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+
+        <header class="header-bar">
+            <div class="welcome-text">
+                <h2>{% block page_title %}Welcome{% endblock %}</h2>
+                <p>{% block page_subtitle %}System Overview{% endblock %}</p>
+            </div>
+            <div class="user-profile">
+                <div style="width: 45px; height: 45px; background: #dfe6e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-user" style="color: #636e72;"></i>
+                </div>
+            </div>
+        </header>
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+</div>
+
+</body>
+</html>

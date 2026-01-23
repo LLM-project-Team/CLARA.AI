@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Access Denied{% endblock %}
+{% block page_subtitle %}You don't have permission to access this page{% endblock %}
+
+{% block content %}
+<style>
+    .denied-container {
+        text-align: center;
+        padding: 3rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .denied-icon {
+        font-size: 5rem;
+        color: #e74c3c;
+        margin-bottom: 1.5rem;
+    }
+    
+    .denied-message {
+        font-size: 1.2rem;
+        color: #636e72;
+        margin-bottom: 2rem;
+    }
+    
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="denied-container">
+    <div class="denied-icon">
+        <i class="fa-solid fa-lock"></i>
+    </div>
+    <h2>Access Denied</h2>
+    <p class="denied-message">
+        {{ message|default:"You don't have the required permissions to access this feature." }}
+    </p>
+    <a href="{% url 'home' %}" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

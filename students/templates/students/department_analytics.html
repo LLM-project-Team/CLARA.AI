@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ department.name }} - Academic Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            {% if user_role != 'HOD' %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'students:academic_analytics' %}">All Analytics</a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ department.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">📊 {{ department.full_name }}</h1>
+            <p class="text-muted mb-0">Department Analytics</p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-6">{{ user_role }}</span>
+            {% if can_modify_schema %}
+                <span class="badge bg-warning text-dark ms-2">Can Modify Schema</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ total_students }}</h2>
+                    <small>Total Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ male_count }}</h2>
+                    <small>Male</small>
+                    <div class="small mt-1">
+                        {% widthratio male_count total_students 100 as male_pct %}
+                        {{ male_pct|default:0 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ female_count }}</h2>
+                    <small>Female</small>
+                    <div class="small mt-1">
+                        {% widthratio female_count total_students 100 as female_pct %}
+                        {{ female_pct|default:0 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ hosteller_count }}</h2>
+                    <small>Hostellers</small>
+                    <div class="small mt-1">
+                        {% widthratio hosteller_count total_students 100 as hosteller_pct %}
+                        {{ hosteller_pct|default:0 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ day_scholar_count }}</h2>
+                    <small>Day Scholars</small>
+                    <div class="small mt-1">
+                        {% widthratio day_scholar_count total_students 100 as ds_pct %}
+                        {{ ds_pct|default:0 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ batches_data|length }}</h2>
+                    <small>Batches</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Batch-wise Breakdown -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">📅 Batch-wise Breakdown</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Batch Year</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Male</th>
+                                    <th class="text-center">Female</th>
+                                    <th class="text-center">Hostellers</th>
+                                    <th class="text-center">Day Scholars</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batches_data %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ batch.batch_year }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ batch.student_count }}</span>
+                                    </td>
+                                    <td class="text-center">{{ batch.male_count }}</td>
+                                    <td class="text-center">{{ batch.female_count }}</td>
+                                    <td class="text-center">{{ batch.hosteller_count }}</td>
+                                    <td class="text-center">{{ batch.day_scholar_count }}</td>
+                                    <td class="text-center">
+                                        <a href="{% url 'students:student_list' department.id batch.batch_year %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Students
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        No batch data available.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Stats -->
+        <div class="col-md-4">
+            <!-- Course Type Distribution -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">📚 Course Type Distribution</h6>
+                </div>
+                <div class="card-body">
+                    {% for course in course_breakdown %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>
+                            {% if course.course_type == 'UG' %}
+                                🎓 Undergraduate
+                            {% elif course.course_type == 'PG' %}
+                                🎓 Postgraduate
+                            {% else %}
+                                📋 {{ course.course_type|default:"Not Specified" }}
+                            {% endif %}
+                        </span>
+                        <span class="badge bg-info">{{ course.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No course type data available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Admission Quota Distribution -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">📋 Admission Quota</h6>
+                </div>
+                <div class="card-body">
+                    {% for quota in quota_breakdown %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ quota.admission_quota|default:"Not Specified" }}</span>
+                        <span class="badge bg-warning text-dark">{{ quota.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No quota data available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">⚡ Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'students:batch_list' department.id %}" 
+                       class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        View All Batches
+                    </a>
+                    {% if can_modify_schema %}
+                    <button class="btn btn-outline-warning btn-sm w-100" disabled>
+                        🔧 Modify Schema (Coming Soon)
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

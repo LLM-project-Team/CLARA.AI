@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Add New Staff{% endblock %}
+{% block page_subtitle %}Create Staff Record{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'staff:department_list' %}">Departments</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <span>Add New Staff</span>
+</div>
+
+<!-- Back Button -->
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'staff:department_list' %}" class="back-button" style="margin: 0;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Departments
+    </a>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    
+    <div class="form-card">
+        <div class="form-card-header">
+            <i class="fa-solid fa-user"></i>
+            <h3>Basic Information</h3>
+        </div>
+        <div class="form-card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Salutation</label>
+                    <select name="salutation">
+                        <option value="">Select</option>
+                        <option value="Mr.">Mr.</option>
+                        <option value="Ms.">Ms.</option>
+                        <option value="Mrs.">Mrs.</option>
+                        <option value="Dr.">Dr.</option>
+                        <option value="Prof.">Prof.</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" name="name" required placeholder="Enter full name">
+                </div>
+                <div class="form-group">
+                    <label>Staff Code</label>
+                    <input type="text" name="staff_code" placeholder="e.g., STF001">
+                </div>
+                <div class="form-group">
+                    <label>Official Email</label>
+                    <input type="email" name="official_email" placeholder="email@institution.ac.in">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-card">
+        <div class="form-card-header green">
+            <i class="fa-solid fa-briefcase"></i>
+            <h3>Professional Information</h3>
+        </div>
+        <div class="form-card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Department <span class="required">*</span></label>
+                    <select name="department_id" required>
+                        <option value="">Select Department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department and selected_department|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }} - {{ dept.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Designation</label>
+                    <input type="text" name="designation" placeholder="e.g., Professor, Lecturer">
+                </div>
+                <div class="form-group">
+                    <label>Qualification</label>
+                    <input type="text" name="qualification" placeholder="e.g., M.Tech, Ph.D">
+                </div>
+                <div class="form-group">
+                    <label>Date of Joining</label>
+                    <input type="date" name="date_of_join">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-actions">
+        <a href="{% url 'staff:department_list' %}" class="btn btn-secondary">
+            <i class="fa-solid fa-times"></i> Cancel
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Add Staff
+        </button>
+    </div>
+</form>
+
+<style>
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.breadcrumb-nav a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.breadcrumb-nav a:hover {
+    color: #2980b9;
+}
+
+.breadcrumb-nav i.fa-chevron-right {
+    font-size: 1rem;
+    color: #bdc3c7;
+}
+
+.breadcrumb-nav span {
+    color: #7f8c8d;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.back-button:hover {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+.alert {
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.alert-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.form-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+.form-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.form-card-header.green {
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+}
+
+.form-card-header i {
+    font-size: 1.8rem;
+    color: white;
+}
+
+.form-card-header h3 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: white;
+    font-weight: 600;
+}
+
+.form-card-body {
+    padding: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 1.3rem;
+    color: #7f8c8d;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.form-group label .required {
+    color: #e74c3c;
+}
+
+.form-group input,
+.form-group select {
+    padding: 1.2rem 1.5rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    color: #2c3e50;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #9c27b0;
+    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #bdc3c7;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1.2rem 2.5rem;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.4);
+}
+
+.btn-secondary {
+    background: white;
+    border: 2px solid #ecf0f1;
+    color: #7f8c8d;
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+</style>
+{% endblock %}

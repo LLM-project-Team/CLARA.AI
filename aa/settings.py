@@ -31,7 +31,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'students.apps.StudentsConfig',
+    'circulars.apps.CircularsConfig',
+    'pages.apps.PagesConfig',
     'users.apps.UsersConfig',
+    'staff.apps.StaffConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,13 +59,14 @@ ROOT_URLCONF = 'aa.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR/'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'users.context_processors.user_role_context',
             ],
         },
     },
@@ -73,10 +78,19 @@ WSGI_APPLICATION = 'aa.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+import os
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME", "daddy_db"),
+        "USER": os.getenv("DB_USER", "daddy_db_user"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "sq4h50jTNT4h3SyKztett0Mk0MQv7TzK"),
+        "HOST": os.getenv("DB_HOST", "dpg-d5hh65a4d50c73933i70-a.oregon-postgres.render.com"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+        "OPTIONS": {
+            "sslmode": os.getenv("DB_SSLMODE", "require"),
+        },
     }
 }
 
@@ -115,7 +129,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -124,3 +140,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 AUTH_USER_MODEL = 'users.CustomUser'
+
+# Login redirect URL - redirect to pages/home after login
+LOGIN_REDIRECT_URL = '/pages/home/'
+
+# Custom authentication backend to use email instead of username
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailBackend',
+]

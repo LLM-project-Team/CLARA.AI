@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Department Management{% endblock %}
+{% block page_subtitle %}Manage Institution Departments{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <span>Department Management</span>
+</div>
+
+<!-- User Info Bar -->
+<div class="ai-status">
+    <div class="status-dot"></div>
+    <span style="font-size: 1.4rem; color: #2c3e50;">
+        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
+        <span style="color: #7f8c8d;">{{ user_role }}</span>
+    </span>
+    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+        <i class="fa-solid fa-building-columns"></i> {{ departments.count }} Departments
+    </span>
+</div>
+
+<!-- Action Buttons Row -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <a href="{% url 'home' %}" class="back-button" style="margin: 0;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+    
+    <button onclick="showAddDepartmentModal()" style="
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+        <i class="fa-solid fa-plus"></i> Add New Department
+    </button>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}">
+    <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-circle-check{% endif %}"></i>
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Departments Table -->
+<div class="table-container">
+    {% if departments %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Code</th>
+                <th>Department Name</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dept in departments %}
+            <tr>
+                <td class="row-num">{{ forloop.counter }}</td>
+                <td><span class="badge badge-secondary">{{ dept.name }}</span></td>
+                <td class="dept-name">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            {{ dept.name|slice:":1" }}
+                        </div>
+                        <span>{{ dept.full_name }}</span>
+                    </div>
+                </td>
+                <td>
+                    {% if dept.is_active %}
+                    <span class="badge badge-green"><i class="fa-solid fa-check"></i> Active</span>
+                    {% else %}
+                    <span class="badge badge-red"><i class="fa-solid fa-times"></i> Inactive</span>
+                    {% endif %}
+                </td>
+                <td>{{ dept.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <button onclick='editDepartment("{{ dept.id }}", "{{ dept.name }}", "{{ dept.full_name }}", {{ dept.is_active|lower }})' 
+                            class="action-btn edit-btn">
+                        <i class="fa-solid fa-pen"></i> Edit
+                    </button>
+                    <button onclick='deleteDepartment("{{ dept.id }}", "{{ dept.name }}")' 
+                            class="action-btn delete-btn">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-building-columns"></i>
+        <h3>No Departments Found</h3>
+        <p>Click "Add New Department" to create your first department.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Department Modal -->
+<div id="addDepartmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-plus"></i> Add New Department</h3>
+            <button class="close-btn" onclick="closeModal('addDepartmentModal')">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'users:add_department' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Department Code <span style="color: #e74c3c;">*</span></label>
+                <input type="text" name="name" required placeholder="e.g., CSE, AIDS, CYBER" style="text-transform: uppercase;">
+                <small>Short code (e.g., CSE for Computer Science)</small>
+            </div>
+            <div class="form-group">
+                <label>Full Department Name <span style="color: #e74c3c;">*</span></label>
+                <input type="text" name="full_name" required placeholder="e.g., Computer Science and Engineering">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addDepartmentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Department</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Department Modal -->
+<div id="editDepartmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-pen"></i> Edit Department</h3>
+            <button class="close-btn" onclick="closeModal('editDepartmentModal')">&times;</button>
+        </div>
+        <form method="POST" id="editDepartmentForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Department Code <span style="color: #e74c3c;">*</span></label>
+                <input type="text" name="name" id="editName" required style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
+                <label>Full Department Name <span style="color: #e74c3c;">*</span></label>
+                <input type="text" name="full_name" id="editFullName" required>
+            </div>
+            <div class="form-group" style="flex-direction: row; align-items: center; gap: 1rem;">
+                <input type="checkbox" name="is_active" id="editIsActive" style="width: 20px; height: 20px; accent-color: #667eea;">
+                <label for="editIsActive" style="margin: 0; cursor: pointer;">Active Department</label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editDepartmentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Department Form -->
+<form method="POST" id="deleteDepartmentForm" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<style>
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.breadcrumb-nav a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.breadcrumb-nav a:hover {
+    color: #2980b9;
+}
+
+.breadcrumb-nav i.fa-chevron-right {
+    font-size: 1rem;
+    color: #bdc3c7;
+}
+
+.breadcrumb-nav span {
+    color: #7f8c8d;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.back-button:hover {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+.alert {
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.alert-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.alert-warning {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffe0b2;
+}
+
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+}
+
+.data-table th {
+    padding: 1.5rem;
+    text-align: left;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.data-table td {
+    padding: 1.5rem;
+    font-size: 1.4rem;
+    color: #2c3e50;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.row-num {
+    color: #95a5a6;
+    font-weight: 500;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.badge-secondary {
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.badge-green {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+
+.badge-red {
+    background: #ffebee;
+    color: #e53935;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-weight: 500;
+}
+
+.edit-btn {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.edit-btn:hover {
+    background: #f57c00;
+    color: white;
+}
+
+.delete-btn {
+    background: #ffebee;
+    color: #e53935;
+    margin-left: 0.5rem;
+}
+
+.delete-btn:hover {
+    background: #e53935;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 6rem 2rem;
+}
+
+.empty-state i {
+    font-size: 5rem;
+    color: #bdc3c7;
+    margin-bottom: 2rem;
+}
+
+.empty-state h3 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.4rem;
+    color: #7f8c8d;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.modal-header h3 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 3rem;
+    color: #95a5a6;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: #2c3e50;
+}
+
+.modal-content form {
+    padding: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    font-size: 1.3rem;
+    color: #7f8c8d;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.form-group input {
+    padding: 1.2rem 1.5rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-group small {
+    font-size: 1.2rem;
+    color: #95a5a6;
+    margin-top: 0.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.btn {
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.btn-secondary:hover {
+    background: #bdc3c7;
+}
+</style>
+
+<script>
+function showAddDepartmentModal() {
+    document.getElementById('addDepartmentModal').classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+function editDepartment(id, name, fullName, isActive) {
+    document.getElementById('editDepartmentForm').action = `/manage/departments/edit/${id}/`;
+    document.getElementById('editName').value = name;
+    document.getElementById('editFullName').value = fullName;
+    document.getElementById('editIsActive').checked = isActive;
+    document.getElementById('editDepartmentModal').classList.add('active');
+}
+
+function deleteDepartment(id, name) {
+    if (confirm(`Are you sure you want to delete "${name}" department?\n\nIf it has students or staff, it will be deactivated instead.`)) {
+        const form = document.getElementById('deleteDepartmentForm');
+        form.action = `/manage/departments/delete/${id}/`;
+        form.submit();
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+    }
+}
+</script>
+{% endblock %}

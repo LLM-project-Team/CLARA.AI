@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ department.name }} - Batch {{ batch_year }}{% endblock %}
+{% block page_subtitle %}Student Records{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:department_list' %}">Departments</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:batch_list' department.id %}">{{ department.name }}</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <span>{{ batch_year }}</span>
+</div>
+
+<!-- User Info Bar -->
+<div class="ai-status">
+    <div class="status-dot"></div>
+    <span style="font-size: 1.4rem; color: #2c3e50;">
+        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
+        <span style="color: #7f8c8d;">{{ user_role }}</span>
+    </span>
+    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+        <i class="fa-solid fa-user-graduate"></i> {{ total_count }} Students
+    </span>
+</div>
+
+<!-- Action Buttons Row -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <a href="{% url 'students:batch_list' department.id %}" class="back-button" style="margin: 0;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Batches
+    </a>
+    
+    <a href="{% url 'students:student_add_batch' department.id batch_year %}" style="
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(39, 174, 96, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+        <i class="fa-solid fa-plus"></i> Add Student
+    </a>
+</div>
+
+<!-- Search & Filter Section -->
+<div class="filter-section">
+    <form method="GET" class="filter-form">
+        <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" name="search" placeholder="Search by name, roll no, register no..." value="{{ search_query }}">
+        </div>
+        <div class="filter-group">
+            <select name="gender">
+                <option value="">All Genders</option>
+                <option value="MALE" {% if gender_filter == 'MALE' %}selected{% endif %}>Male</option>
+                <option value="FEMALE" {% if gender_filter == 'FEMALE' %}selected{% endif %}>Female</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <select name="hosteller">
+                <option value="">All Students</option>
+                <option value="true" {% if hosteller_filter == 'true' %}selected{% endif %}>Hostellers</option>
+                <option value="false" {% if hosteller_filter == 'false' %}selected{% endif %}>Day Scholars</option>
+            </select>
+        </div>
+        <button type="submit" class="filter-btn">
+            <i class="fa-solid fa-filter"></i> Apply
+        </button>
+        {% if search_query or gender_filter or hosteller_filter %}
+        <a href="{% url 'students:student_list' department.id batch_year %}" class="clear-btn">
+            <i class="fa-solid fa-times"></i> Clear
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Students Table -->
+<div class="table-container">
+    {% if students %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Roll No</th>
+                <th>Student Name</th>
+                <th>Register No</th>
+                <th>Gender</th>
+                <th>Mobile</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td class="row-num">{{ forloop.counter }}</td>
+                <td><span class="badge badge-secondary">{{ student.roll_number|default:"-" }}</span></td>
+                <td class="student-name">
+                    <div class="avatar {% if student.gender == 'MALE' %}male{% else %}female{% endif %}">
+                        <i class="fa-solid fa-{% if student.gender == 'MALE' %}mars{% else %}venus{% endif %}"></i>
+                    </div>
+                    <span>{{ student.student_name }}</span>
+                </td>
+                <td>{{ student.register_number|default:"-" }}</td>
+                <td>
+                    <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">
+                        {{ student.gender }}
+                    </span>
+                </td>
+                <td>{{ student.mobile_number|default:"-" }}</td>
+                <td>
+                    {% if student.hosteller %}
+                    <span class="badge badge-green">Hosteller</span>
+                    {% else %}
+                    <span class="badge badge-orange">Day Scholar</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'students:student_detail' student.id %}" class="action-btn">
+                        <i class="fa-solid fa-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination-container">
+        <span class="page-info">
+            Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+        </span>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+                <i class="fa-solid fa-angles-left"></i>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+                <i class="fa-solid fa-angle-left"></i>
+            </a>
+            {% endif %}
+            
+            <span class="page-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+                <i class="fa-solid fa-angle-right"></i>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+                <i class="fa-solid fa-angles-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-search"></i>
+        <h3>No Students Found</h3>
+        <p>{% if search_query %}No students match your search criteria.{% else %}There are no students in this batch.{% endif %}</p>
+        {% if search_query %}
+        <a href="{% url 'students:student_list' department.id batch_year %}" class="back-link">
+            <i class="fa-solid fa-times"></i> Clear Search
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.breadcrumb-nav a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.breadcrumb-nav a:hover {
+    color: #2980b9;
+}
+
+.breadcrumb-nav i.fa-chevron-right {
+    font-size: 1rem;
+    color: #bdc3c7;
+}
+
+.breadcrumb-nav span {
+    color: #7f8c8d;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.back-button:hover {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+}
+
+.search-box:focus-within {
+    border-color: #3498db;
+}
+
+.search-box i {
+    color: #95a5a6;
+    font-size: 1.6rem;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.4rem;
+    color: #2c3e50;
+}
+
+.search-box input::placeholder {
+    color: #bdc3c7;
+}
+
+.filter-group select {
+    padding: 1rem 1.5rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    color: #2c3e50;
+    background: white;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+.filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.filter-btn:hover {
+    background: #2980b9;
+}
+
+.clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    color: #e74c3c;
+    text-decoration: none;
+    font-size: 1.4rem;
+    transition: color 0.3s;
+}
+
+.clear-btn:hover {
+    color: #c0392b;
+}
+
+/* Table Styles */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+}
+
+.data-table th {
+    padding: 1.5rem;
+    text-align: left;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.data-table td {
+    padding: 1.5rem;
+    font-size: 1.4rem;
+    color: #2c3e50;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.row-num {
+    color: #95a5a6;
+    font-weight: 500;
+}
+
+.student-name {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.avatar.male {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.avatar.female {
+    background: #fce4ec;
+    color: #e91e63;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.badge-secondary {
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.badge-blue {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.badge-pink {
+    background: #fce4ec;
+    color: #e91e63;
+}
+
+.badge-green {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+
+.badge-orange {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    transition: background 0.3s;
+}
+
+.action-btn:hover {
+    background: #2980b9;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.page-info {
+    font-size: 1.3rem;
+    color: #7f8c8d;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    color: #2c3e50;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.page-link:hover {
+    background: #3498db;
+    color: white;
+}
+
+.page-current {
+    padding: 0 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 6rem 2rem;
+}
+
+.empty-state i {
+    font-size: 5rem;
+    color: #bdc3c7;
+    margin-bottom: 2rem;
+}
+
+.empty-state h3 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.4rem;
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #3498db;
+    text-decoration: none;
+    font-size: 1.4rem;
+}
+
+.back-link:hover {
+    color: #2980b9;
+}
+</style>
+{% endblock %}

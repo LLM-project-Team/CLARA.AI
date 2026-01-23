@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Welcome, {{ user_name }}.{% endblock %}
+{% block page_subtitle %}Here is your academic overview for today.{% endblock %}
+
+{% block content %}
+
+    {% if can_generate_circular %}
+    <div class="ai-status">
+        <div class="status-dot"></div>
+        <div>
+            <strong style="font-size: 1.4rem; color: #2d3436;">System Insight:</strong>
+            <span style="font-size: 1.4rem; color: #636e72;"> Upcoming Holiday detected: <strong>Republic Day (Jan 26)</strong>. Circular draft recommended.</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="features-grid">
+
+        <!-- AI Circular Generator - PRINCIPAL & DEAN only -->
+        {% if can_generate_circular %}
+        <div class="feature-card" onclick="window.location.href='{% url 'circular_gen' %}?auto_holiday=Republic Day'">
+            <div class="icon-container">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h3>AI Circular Generator</h3>
+            <p>Automatically draft, verify, and distribute official circulars for upcoming holidays and events.</p>
+            <div class="card-btn">
+                Create New Circular <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI Features - PRINCIPAL & DEAN only -->
+        {% if can_use_ai_features %}
+        <div class="feature-card">
+            <div class="icon-container" style="background-color: #e3f2fd;">
+                <i class="fa-solid fa-chart-pie" style="color: #2196f3;"></i>
+            </div>
+            <h3>Academic Analytics</h3>
+            <p>View student performance trends and attendance reports powered by LLM insights.</p>
+            <div class="card-btn" style="color: #2196f3;">
+                View Reports <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="icon-container" style="background-color: #ffebee;">
+                <i class="fa-solid fa-envelope-open-text" style="color: #e91e63;"></i>
+            </div>
+            <h3>Staff Communication</h3>
+            <p>Manage internal memos and track read receipts from department heads.</p>
+            <div class="card-btn" style="color: #e91e63;">
+                Manage Emails <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- User Management - ADMIN only -->
+        {% if can_manage_users %}
+        <div class="feature-card" onclick="window.location.href='{% url 'users:user_management' %}'">
+            <div class="icon-container" style="background-color: #fff3e0;">
+                <i class="fa-solid fa-users-gear" style="color: #ff9800;"></i>
+            </div>
+            <h3>User Management</h3>
+            <p>Add new users (HODs, Deans, etc.), edit credentials, and manage access permissions.</p>
+            <div class="card-btn" style="color: #ff9800;">
+                Manage Users <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+
+        <!-- Department Management - ADMIN only -->
+        <div class="feature-card" onclick="window.location.href='{% url 'users:department_management' %}'">
+            <div class="icon-container" style="background-color: #e0f2f1;">
+                <i class="fa-solid fa-building-columns" style="color: #009688;"></i>
+            </div>
+            <h3>Department Management</h3>
+            <p>Add, edit, and manage departments. Control department status and organization structure.</p>
+            <div class="card-btn" style="color: #009688;">
+                Manage Departments <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Staff Database - ADMIN: full access, PRINCIPAL/DEAN/HOD: view only -->
+        {% if can_modify_staff %}
+        <div class="feature-card" onclick="window.location.href='{% url 'staff:department_list' %}'">
+            <div class="icon-container" style="background-color: #fce4ec;">
+                <i class="fa-solid fa-user-tie" style="color: #9c27b0;"></i>
+            </div>
+            <h3>Staff Database</h3>
+            <p>Full access: Add, edit, and delete staff records and manage department assignments.</p>
+            <div class="card-btn" style="color: #9c27b0;">
+                Manage Staff <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% elif can_view_staff %}
+        <div class="feature-card" onclick="window.location.href='{% url 'staff:department_list' %}'">
+            <div class="icon-container" style="background-color: #f3e5f5;">
+                <i class="fa-solid fa-user-tie" style="color: #7b1fa2;"></i>
+            </div>
+            <h3>Staff Directory</h3>
+            <p>View staff records, contact information, and department assignments (read-only access).</p>
+            <div class="card-btn" style="color: #7b1fa2;">
+                View Staff <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Student Database - ALL users can add/edit students -->
+        {% if can_add_students or can_edit_students %}
+        <div class="feature-card" onclick="window.location.href='{% url 'students:department_list' %}'">
+            <div class="icon-container" style="background-color: #e8f5e9;">
+                <i class="fa-solid fa-user-graduate" style="color: #4caf50;"></i>
+            </div>
+            <h3>Student Database</h3>
+            <p>Access and manage student records, attendance, and academic information.</p>
+            <div class="card-btn" style="color: #4caf50;">
+                Manage Students <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+{% endblock %}

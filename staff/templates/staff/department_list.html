@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Staff Database{% endblock %}
+{% block page_subtitle %}Select a Department to View Staff Members{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right"></i>
+    <span>Departments</span>
+</div>
+
+<!-- User Info Bar -->
+<div class="ai-status">
+    <div class="status-dot"></div>
+    <span style="font-size: 1.4rem; color: #2c3e50;">
+        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
+        <span style="color: #7f8c8d;">{{ user_role }}</span>
+    </span>
+    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+        <i class="fa-solid fa-building-columns"></i> {{ total_departments }} Departments
+    </span>
+</div>
+
+{% if can_add %}
+<!-- Add Staff Button -->
+<div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
+    <a href="{% url 'staff:staff_add' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">
+        <i class="fa-solid fa-plus"></i> Add New Staff
+    </a>
+</div>
+{% endif %}
+
+<!-- Departments Grid -->
+<div class="features-grid">
+    {% for item in departments %}
+    <div class="feature-card department-card" onclick="window.location.href='{% url 'staff:staff_list' item.department.id %}'">
+        <div class="icon-container" style="
+            {% if item.department.name == 'AIDS' %}
+            background-color: #e8f5e9;
+            {% elif item.department.name == 'CSE' %}
+            background-color: #e3f2fd;
+            {% elif item.department.name == 'CYBER' %}
+            background-color: #fce4ec;
+            {% else %}
+            background-color: #fff3e0;
+            {% endif %}
+        ">
+            {% if item.department.name == 'AIDS' %}
+            <i class="fa-solid fa-brain" style="color: #4caf50;"></i>
+            {% elif item.department.name == 'CSE' %}
+            <i class="fa-solid fa-laptop-code" style="color: #2196f3;"></i>
+            {% elif item.department.name == 'CYBER' %}
+            <i class="fa-solid fa-shield-halved" style="color: #e91e63;"></i>
+            {% else %}
+            <i class="fa-solid fa-building" style="color: #ff9800;"></i>
+            {% endif %}
+        </div>
+        <h3>{{ item.department.name }}</h3>
+        <p>{{ item.department.full_name }}</p>
+        
+        <div class="dept-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ item.staff_count }}</span>
+                <span class="stat-label">Staff</span>
+            </div>
+        </div>
+        
+        <div class="card-btn" style="
+            {% if item.department.name == 'AIDS' %}color: #4caf50;
+            {% elif item.department.name == 'CSE' %}color: #2196f3;
+            {% elif item.department.name == 'CYBER' %}color: #e91e63;
+            {% else %}color: #ff9800;{% endif %}
+        ">
+            View Staff <i class="fa-solid fa-arrow-right"></i>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <i class="fa-solid fa-folder-open"></i>
+        <h3>No Departments Found</h3>
+        <p>There are no active departments in the system.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.breadcrumb-nav a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.breadcrumb-nav a:hover {
+    color: #2980b9;
+}
+
+.breadcrumb-nav i.fa-chevron-right {
+    font-size: 1rem;
+    color: #bdc3c7;
+}
+
+.breadcrumb-nav span {
+    color: #7f8c8d;
+}
+
+.dept-stats {
+    display: flex;
+    gap: 3rem;
+    margin: 2rem 0;
+    padding: 1.5rem 0;
+    border-top: 1px solid #ecf0f1;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-number {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    color: #95a5a6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 6rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+.empty-state i {
+    font-size: 5rem;
+    color: #bdc3c7;
+    margin-bottom: 2rem;
+}
+
+.empty-state h3 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.4rem;
+    color: #7f8c8d;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Edit Student{% endblock %}
+{% block page_subtitle %}Update student information{% endblock %}
+
+{% block content %}
+<style>
+    .edit-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .edit-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f3f5;
+    }
+    
+    .card-header i {
+        font-size: 1.5rem;
+        color: #667eea;
+    }
+    
+    .card-header h3 {
+        margin: 0;
+        color: #2d3436;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+        color: #2d3436;
+        font-size: 0.9rem;
+    }
+    
+    .form-group label .required {
+        color: #e74c3c;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.7rem;
+        border: 2px solid #dfe6e9;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-top: 1.5rem;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+    }
+    
+    .btn-row {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #f1f3f5;
+    }
+    
+    .btn {
+        flex: 1;
+        padding: 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #dfe6e9;
+        color: #2d3436;
+    }
+    
+    .btn:hover {
+        opacity: 0.9;
+    }
+    
+    .student-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .student-avatar {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    
+    .student-info h2 {
+        margin: 0;
+        color: #2d3436;
+    }
+    
+    .student-info p {
+        margin: 0.3rem 0 0;
+        color: #636e72;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-success { background: #d4edda; color: #155724; }
+    .alert-error { background: #f8d7da; color: #721c24; }
+</style>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="edit-container">
+    <div class="student-header">
+        <div class="student-avatar">
+            {{ student.student_name|slice:":1"|upper }}
+        </div>
+        <div class="student-info">
+            <h2>{{ student.student_name }}</h2>
+            <p>{{ student.roll_number }} • {{ department.name|default:"Unknown Dept" }}</p>
+        </div>
+    </div>
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="edit-card">
+            <div class="card-header">
+                <i class="fa-solid fa-user"></i>
+                <h3>Basic Information</h3>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Salutation</label>
+                    <select name="salutation">
+                        <option value="">Select</option>
+                        <option value="Mr." {% if student.salutation == "Mr." %}selected{% endif %}>Mr.</option>
+                        <option value="Ms." {% if student.salutation == "Ms." %}selected{% endif %}>Ms.</option>
+                        <option value="Mrs." {% if student.salutation == "Mrs." %}selected{% endif %}>Mrs.</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Student Name <span class="required">*</span></label>
+                    <input type="text" name="student_name" value="{{ student.student_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Register Number <span class="required">*</span></label>
+                    <input type="text" name="register_number" value="{{ student.register_number }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Roll Number <span class="required">*</span></label>
+                    <input type="text" name="roll_number" value="{{ student.roll_number }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Gender <span class="required">*</span></label>
+                    <select name="gender" required>
+                        <option value="MALE" {% if student.gender == "MALE" %}selected{% endif %}>Male</option>
+                        <option value="FEMALE" {% if student.gender == "FEMALE" %}selected{% endif %}>Female</option>
+                        <option value="OTHER" {% if student.gender == "OTHER" %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input type="date" name="date_of_birth" value="{{ student.date_of_birth|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group">
+                    <label>Blood Group</label>
+                    <select name="blood_group">
+                        <option value="">Select</option>
+                        <option value="A+VE" {% if student.blood_group == "A+VE" %}selected{% endif %}>A+VE</option>
+                        <option value="A1+VE" {% if student.blood_group == "A1+VE" %}selected{% endif %}>A1+VE</option>
+                        <option value="A1B+VE" {% if student.blood_group == "A1B+VE" %}selected{% endif %}>A1B+VE</option>
+                        <option value="A2+VE" {% if student.blood_group == "A2+VE" %}selected{% endif %}>A2+VE</option>
+                        <option value="A2B+VE" {% if student.blood_group == "A2B+VE" %}selected{% endif %}>A2B+VE</option>
+                        <option value="AB+VE" {% if student.blood_group == "AB+VE" %}selected{% endif %}>AB+VE</option>
+                        <option value="A-VE" {% if student.blood_group == "A-VE" %}selected{% endif %}>A-VE</option>
+                        <option value="B+VE" {% if student.blood_group == "B+VE" %}selected{% endif %}>B+VE</option>
+                        <option value="B-VE" {% if student.blood_group == "B-VE" %}selected{% endif %}>B-VE</option>
+                        <option value="O+VE" {% if student.blood_group == "O+VE" %}selected{% endif %}>O+VE</option>
+                        <option value="O-ve" {% if student.blood_group == "O-ve" %}selected{% endif %}>O-ve</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" name="mobile_number" value="{{ student.mobile_number|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>College Email</label>
+                    <input type="email" name="college_email" value="{{ student.college_email|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>District</label>
+                    <input type="text" name="district" value="{{ student.district|default:'' }}">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Academic Information -->
+        <div class="edit-card">
+            <div class="card-header">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <h3>Academic Information</h3>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Batch Year</label>
+                    <input type="text" name="batch_year" value="{{ student.batch_year|default:'' }}" placeholder="e.g., 2024-28">
+                </div>
+                <div class="form-group">
+                    <label>Academic Year Join</label>
+                    <input type="text" name="academic_year_join" value="{{ student.academic_year_join|default:'' }}" placeholder="e.g., 2024-25">
+                </div>
+                <div class="form-group">
+                    <label>Date of Admission</label>
+                    <input type="date" name="date_of_admission" value="{{ student.date_of_admission|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group">
+                    <label>Course Type</label>
+                    <select name="course_type">
+                        <option value="">Select</option>
+                        <option value="UG" {% if student.course_type == "UG" %}selected{% endif %}>Undergraduate (UG)</option>
+                        <option value="PG" {% if student.course_type == "PG" %}selected{% endif %}>Postgraduate (PG)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Admission Quota</label>
+                    <input type="text" name="admission_quota" value="{{ student.admission_quota|default:'' }}" placeholder="MQ/GQ">
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" name="hosteller" id="hosteller" {% if student.hosteller %}checked{% endif %}>
+                    <label for="hosteller">Hosteller</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Parent Information -->
+        <div class="edit-card">
+            <div class="card-header">
+                <i class="fa-solid fa-users"></i>
+                <h3>Parent/Guardian Information</h3>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Father's Name</label>
+                    <input type="text" name="father_name" value="{{ student.father_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Father's Occupation</label>
+                    <input type="text" name="father_occupation" value="{{ student.father_occupation|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Mother's Name</label>
+                    <input type="text" name="mother_name" value="{{ student.mother_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Mother's Occupation</label>
+                    <input type="text" name="mother_occupation" value="{{ student.mother_occupation|default:'' }}">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Information -->
+        <div class="edit-card">
+            <div class="card-header">
+                <i class="fa-solid fa-info-circle"></i>
+                <h3>Additional Information</h3>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Religion</label>
+                    <input type="text" name="religion" value="{{ student.religion|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Community</label>
+                    <input type="text" name="community" value="{{ student.community|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Caste</label>
+                    <input type="text" name="caste" value="{{ student.caste|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Aadhaar Number</label>
+                    <input type="text" name="aadhaar_number" value="{{ student.aadhaar_number|default:'' }}" maxlength="12">
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" name="first_graduate" id="first_graduate" {% if student.first_graduate %}checked{% endif %}>
+                    <label for="first_graduate">First Graduate</label>
+                </div>
+                <div class="form-group full-width">
+                    <label>Permanent Address</label>
+                    <textarea name="permanent_address">{{ student.permanent_address|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-row">
+            <a href="{% url 'students:student_detail' student.id %}" class="btn btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-check"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

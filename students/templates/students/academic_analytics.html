@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Analytics - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">📊 Academic Analytics</h1>
+            <p class="text-muted mb-0">
+                {% if order_by == 'department' %}
+                    Institutional overview sorted by Department
+                {% else %}
+                    Institutional overview sorted by Batch/Academic Year
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-6">{{ user_role }}</span>
+            {% if can_modify_schema %}
+                <span class="badge bg-warning text-dark ms-2">Schema Editor</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_students }}</h3>
+                    <small>Total Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_departments }}</h3>
+                    <small>Departments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_male }}</h3>
+                    <small>Male Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_female }}</h3>
+                    <small>Female Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_hostellers }}</h3>
+                    <small>Hostellers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ total_day_scholars }}</h3>
+                    <small>Day Scholars</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch-wise Overview -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">📅 Batch-wise Distribution</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for batch in all_batches %}
+                <div class="col-md-2 mb-3">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body text-center">
+                            <h5 class="text-primary">{{ batch.batch_year|default:"N/A" }}</h5>
+                            <h3>{{ batch.count }}</h3>
+                            <small class="text-muted">students</small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-muted">No batch data available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Department-wise Analytics -->
+    <div class="card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">🏛️ Department-wise Analytics</h5>
+            <small>
+                {% if order_by == 'department' %}
+                    Sorted alphabetically by department
+                {% else %}
+                    Sorted by student count (highest first)
+                {% endif %}
+            </small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Department</th>
+                            <th class="text-center">Total</th>
+                            <th class="text-center">Male</th>
+                            <th class="text-center">Female</th>
+                            <th class="text-center">Hostellers</th>
+                            <th class="text-center">Day Scholars</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in analytics_data %}
+                        <tr>
+                            <td>
+                                <strong>{{ data.department.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ data.department.full_name }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary fs-6">{{ data.student_count }}</span>
+                            </td>
+                            <td class="text-center">{{ data.male_count }}</td>
+                            <td class="text-center">{{ data.female_count }}</td>
+                            <td class="text-center">{{ data.hosteller_count }}</td>
+                            <td class="text-center">{{ data.day_scholar_count }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'students:department_analytics' data.department.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                No department data available.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,691 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Circular Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/49f3b85e32.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        html {
+            font-size: 62.5%;
+        }
+        
+        body {
+            min-height: 100vh;
+            background: #f8fafc;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .new-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1.2rem 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .new-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .history-list {
+            list-style: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            padding: 1.2rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #cbd5e1;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .history-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .history-item i {
+            font-size: 1.4rem;
+            color: #667eea;
+        }
+        
+        .history-empty {
+            color: #475569;
+            font-size: 1.3rem;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        /* Main Area */
+        .main-area {
+            flex: 1;
+            margin-left: 280px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content-wrapper {
+            flex: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem;
+            width: 100%;
+        }
+        
+        /* Welcome Section */
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .welcome-title {
+            font-size: 4.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-subtitle {
+            font-size: 2.4rem;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        
+        /* Template Grid */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+        
+        .template-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        
+        .template-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .template-icon.holiday { background: #fef3c7; color: #f59e0b; }
+        .template-icon.exam { background: #dbeafe; color: #3b82f6; }
+        .template-icon.meeting { background: #dcfce7; color: #22c55e; }
+        .template-icon.disciplinary { background: #fee2e2; color: #ef4444; }
+        .template-icon.general { background: #f3e8ff; color: #a855f7; }
+        .template-icon.event { background: #fce7f3; color: #ec4899; }
+        
+        .template-card h4 {
+            font-size: 1.6rem;
+            color: #1e293b;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .template-card p {
+            font-size: 1.3rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        
+        /* Editor Section */
+        .editor-section {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .editor-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editor-title-input {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            width: 60%;
+        }
+        
+        .editor-title-input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .editor-content {
+            padding: 3rem;
+        }
+        
+        .editor-textarea {
+            width: 100%;
+            min-height: 400px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 2rem;
+            font-size: 1.5rem;
+            line-height: 1.8;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .editor-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .editor-textarea[readonly] {
+            background: #f8fafc;
+            cursor: default;
+        }
+        
+        .editor-footer {
+            padding: 2rem 3rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 1.2rem 2.5rem;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        
+        .btn-edit {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* Prompt Input Area */
+        .prompt-section {
+            background: white;
+            padding: 2rem 3rem;
+            border-top: 1px solid #e2e8f0;
+            position: sticky;
+            bottom: 0;
+        }
+        
+        .prompt-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .prompt-box {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 1rem 1.5rem 1rem 2.5rem;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .prompt-box:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .prompt-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1.5rem;
+            padding: 1rem;
+            color: #1e293b;
+        }
+        
+        .prompt-input::placeholder {
+            color: #94a3b8;
+        }
+        
+        .prompt-send {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.6rem;
+            transition: all 0.3s;
+        }
+        
+        .prompt-send:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Messages */
+        .alert {
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        /* View Mode Styles */
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .view-title {
+            font-size: 2.4rem;
+            color: #1e293b;
+            font-weight: 700;
+        }
+        
+        .view-meta {
+            font-size: 1.3rem;
+            color: #64748b;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .template-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            
+            .main-area {
+                margin-left: 0;
+            }
+            
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .welcome-title {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="{% url 'home' %}" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+        
+        <a href="{% url 'circular_gen' %}" class="new-btn">
+            <i class="fa-solid fa-plus"></i> New Circular
+        </a>
+        
+        <div class="section-title">Recent Circulars</div>
+        
+        <ul class="history-list">
+            {% for item in history %}
+            <a href="{% url 'circular_view' item.id %}" class="history-item">
+                <i class="fa-regular fa-file-lines"></i>
+                <span>{{ item.title|truncatechars:25 }}</span>
+            </a>
+            {% empty %}
+            <li class="history-empty">
+                <i class="fa-regular fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                No circulars yet
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+    
+    <!-- Main Area -->
+    <main class="main-area">
+        <div class="content-wrapper">
+            
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if generated_content %}
+            <!-- Editor/Viewer Mode -->
+            <div class="editor-section">
+                <form method="POST" action="{% url 'circular_save' %}" id="circularForm">
+                    {% csrf_token %}
+                    <div class="editor-header">
+                        <input type="text" 
+                               name="title" 
+                               class="editor-title-input" 
+                               placeholder="Enter circular title..." 
+                               value="{{ generated_title|default:'' }}"
+                               {% if view_mode %}readonly{% endif %}>
+                        <input type="hidden" name="category" value="{{ template_type|default:'manual' }}">
+                    </div>
+                    
+                    <div class="editor-content">
+                        <textarea name="content" 
+                                  class="editor-textarea" 
+                                  id="contentEditor"
+                                  {% if view_mode %}readonly{% endif %}>{{ generated_content }}</textarea>
+                    </div>
+                    
+                    <div class="editor-footer">
+                        <div>
+                            {% if view_mode and circular %}
+                            <span class="view-meta">
+                                <i class="fa-regular fa-calendar"></i> 
+                                Created: {{ circular.created_at|date:"d M Y, h:i A" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="editor-actions">
+                            {% if view_mode %}
+                                <a href="{% url 'circular_gen' %}" class="btn btn-secondary">
+                                    <i class="fa-solid fa-arrow-left"></i> Back
+                                </a>
+                                <form method="POST" action="{% url 'circular_delete' circular.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this circular?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            {% else %}
+                                <a href="{% url 'circular_gen' %}" class="btn btn-secondary">
+                                    <i class="fa-solid fa-times"></i> Discard
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-check"></i> Save & Approve
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            {% else %}
+            <!-- Welcome/Template Selection Mode -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Hello, {{ user_name }}.</h1>
+                <p class="welcome-subtitle">What would you like to draft today?</p>
+            </div>
+            
+            <div class="template-grid">
+                <a href="{% url 'circular_gen' %}?template=holiday" class="template-card">
+                    <div class="template-icon holiday">
+                        <i class="fa-solid fa-umbrella-beach"></i>
+                    </div>
+                    <h4>Declare Holiday</h4>
+                    <p>Draft a notice for a holiday or festival.</p>
+                </a>
+                
+                <a href="{% url 'circular_gen' %}?template=exam" class="template-card">
+                    <div class="template-icon exam">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <h4>Exam Schedule</h4>
+                    <p>Notify about upcoming examination dates.</p>
+                </a>
+                
+                <a href="{% url 'circular_gen' %}?template=meeting" class="template-card">
+                    <div class="template-icon meeting">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h4>Staff Meeting</h4>
+                    <p>Call for a meeting with staff or HODs.</p>
+                </a>
+                
+                <a href="{% url 'circular_gen' %}?template=disciplinary" class="template-card">
+                    <div class="template-icon disciplinary">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h4>Disciplinary Notice</h4>
+                    <p>Draft a formal warning or notice.</p>
+                </a>
+                
+                <a href="{% url 'circular_gen' %}?template=event" class="template-card">
+                    <div class="template-icon event">
+                        <i class="fa-solid fa-calendar-star"></i>
+                    </div>
+                    <h4>Event Announcement</h4>
+                    <p>Announce an upcoming event or function.</p>
+                </a>
+                
+                <a href="{% url 'circular_gen' %}?template=general" class="template-card">
+                    <div class="template-icon general">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h4>General Notice</h4>
+                    <p>Create a custom announcement.</p>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if not view_mode %}
+        <!-- Prompt Input (always visible except in view mode) -->
+        <div class="prompt-section">
+            <div class="prompt-container">
+                <form method="POST" action="{% url 'circular_ai_generate' %}" id="aiPromptForm">
+                    {% csrf_token %}
+                    <div class="prompt-box">
+                        <input type="text" 
+                               name="prompt" 
+                               class="prompt-input" 
+                               id="promptInput"
+                               placeholder="Or describe what you need... (e.g., 'Draft a circular for Pongal Holiday on Jan 14')">
+                        <button type="button" class="prompt-send" onclick="generateAI()">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+function generateAI() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    if (!prompt) {
+        alert('Please enter a prompt');
+        return;
+    }
+    
+    // For now, redirect with prompt as query parameter
+    // In production, this would be an AJAX call to the AI endpoint
+    const encodedPrompt = encodeURIComponent(prompt);
+    window.location.href = `{% url 'circular_gen' %}?template=general&prompt=${encodedPrompt}`;
+}
+
+// Allow Enter key to submit prompt
+document.getElementById('promptInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        generateAI();
+    }
+});
+</script>
+
+</body>
+</html>
