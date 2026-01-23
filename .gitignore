@@ -13,12 +13,14 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.pyc
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.bak
 
 # Database
 *.sqlite3
@@ -34,3 +36,15 @@ Thumbs.db
 
 # Django
 local_settings.py
+staticfiles/
+*.log
+*.pot
+
+# Media files
+media/
+
+# Test files
+htmlcov/
+.coverage
+.pytest_cache/
+.tox/
