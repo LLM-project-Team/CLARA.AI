@@ -3,206 +3,245 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import Circular
+from .models import Circular, CircularTemplate
 from users.models import UserProfile
 import json
+import os
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-# Template definitions for quick generation
+# ─────────────────────────────────────────────────────────────────
+# Institution constants  (match the real SIET letterhead)
+# ─────────────────────────────────────────────────────────────────
+INSTITUTION_HEADER = """\
+               SRI SHAKTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY
+               Coimbatore - 641 062, L&T By Pass, Tamil Nadu, India"""
+
+COPY_TO_BLOCK = """\
+Copy to:
+    \u2022  The Chairman Sir for kind favor of Information
+    \u2022  The Secretary Sir and Joint Secretary Sir for kind favor of Information
+    \u2022  Deans, Directors and All HoDs for needful actions
+    \u2022  Hostel Wardens
+    \u2022  Office File"""
+
+def _academic_year():
+    """Return academic year string e.g. '2024-2025'"""
+    now = timezone.now()
+    yr = now.year
+    # Academic year starts in July; before July it's the previous year
+    if now.month < 7:
+        return f"{yr - 1}-{yr}"
+    return f"{yr}-{yr + 1}"
+
+# ─────────────────────────────────────────────────────────────────
+# Quick-generation template definitions  (SIET letterhead format)
+# ─────────────────────────────────────────────────────────────────
 CIRCULAR_TEMPLATES = {
     'holiday': {
         'title': 'Holiday Declaration',
         'icon': 'fa-umbrella-beach',
         'description': 'Draft a notice for a holiday or festival.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
+                                    CIRCULAR
 
-Subject: Holiday Declaration - {occasion}
+We are pleased to inform you that our Institute will observe a holiday on {holiday_date} on the occasion of {occasion}. Please note that the Mess will be closed during this holiday period.
 
-Dear Staff and Students,
+Regular Classes and activities will resume on the next working day.
 
-This is to inform all concerned that the institution will remain closed on {holiday_date} on the occasion of {occasion}.
+We wish you all a happy and prosperous {occasion}. May this festive season bring light, happiness, and success in all your endeavors.
 
-All regular classes and office activities will resume on the following working day.
-
-Students are advised to utilize this time for self-study and preparation.
-
-For any urgent matters, please contact the college office.
-
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     },
     'exam': {
         'title': 'Exam Schedule',
         'icon': 'fa-clock',
         'description': 'Notify about upcoming examination dates.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
+                                    CIRCULAR
 
-Subject: {exam_type} Examination Schedule
+This is to inform all students that the {exam_type} Examinations for the Academic Year {academic_year} will be held from {start_date} to {end_date}.
 
-Dear Students,
-
-This is to inform all students that the {exam_type} examinations for the academic year {academic_year} will be conducted as per the following schedule:
-
-Examination Period: {start_date} to {end_date}
-
-Important Instructions:
-1. Students must carry their ID cards to the examination hall.
+Students are instructed to:
+1. Carry their Identity Cards and Hall Tickets to the examination hall.
 2. Report to the examination hall 15 minutes before the scheduled time.
 3. Electronic devices are strictly prohibited inside the examination hall.
-4. Any form of malpractice will result in strict disciplinary action.
+4. Any form of malpractice will result in strict disciplinary action as per the Institute's rules.
 
-The detailed timetable will be displayed on the notice board and college website.
+The detailed timetable has been displayed on the Department Notice Boards and the Institute website.
 
-All the best for your examinations!
+All students are wished the very best for their examinations.
 
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     },
     'meeting': {
         'title': 'Staff Meeting',
         'icon': 'fa-users',
         'description': 'Call for a meeting with staff or department heads.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
+                                    CIRCULAR
 
-Subject: {meeting_type} Meeting Notice
+All {recipients} are hereby informed that a {meeting_type} Meeting is scheduled as follows:
 
-Dear {recipients},
-
-A {meeting_type} meeting has been scheduled as per the following details:
-
-Date: {meeting_date}
-Time: {meeting_time}
-Venue: {venue}
+    Date    : {meeting_date}
+    Time    : {meeting_time}
+    Venue   : {venue}
 
 Agenda:
 {agenda}
 
-All concerned are requested to attend the meeting punctually. Please come prepared with relevant documents and reports.
+All concerned are requested to attend the meeting punctually and come prepared with relevant documents and progress reports.
 
-Kindly confirm your attendance by replying to this circular.
-
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     },
     'disciplinary': {
-        'title': 'Disciplinary Action',
+        'title': 'Disciplinary Notice',
         'icon': 'fa-triangle-exclamation',
         'description': 'Draft a formal warning or disciplinary notice.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
+                                    CIRCULAR
 
-Subject: Disciplinary Notice
+This circular is issued to bring to the notice of all students and staff the importance of maintaining discipline and decorum within the Institute premises.
 
-To All Students/Staff,
-
-This circular is issued to bring to the notice of all concerned regarding the importance of maintaining discipline and decorum within the institution premises.
-
-It has been observed that certain individuals have been found violating the institution's code of conduct. Such behavior is strictly unacceptable and will not be tolerated.
+It has been observed that certain individuals have not been adhering to the Institute's Code of Conduct. Such behavior is strictly unacceptable.
 
 All students and staff are hereby warned that:
+1. Any violation of Institute rules will result in strict disciplinary action.
+2. Repeated offences may lead to suspension or expulsion from the Institute.
+3. The Institute reserves the right to take further action as deemed necessary.
 
-1. Any violation of institution rules will result in strict disciplinary action.
-2. Repeated offenses may lead to suspension or expulsion.
-3. The institution reserves the right to take legal action if necessary.
+Full cooperation from all is expected in maintaining a healthy and productive academic environment.
 
-We expect full cooperation from everyone in maintaining a healthy and productive academic environment.
-
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     },
     'general': {
         'title': 'General Announcement',
         'icon': 'fa-bullhorn',
         'description': 'Create a general announcement for any purpose.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
-
-Subject: {subject}
-
-Dear {recipients},
+                                    CIRCULAR
 
 {content}
 
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     },
     'event': {
         'title': 'Event Announcement',
         'icon': 'fa-calendar-star',
         'description': 'Announce an upcoming event or function.',
-        'template': """OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        'template': """Ref : {circular_no}                                         {date}
 
-Circular No: {circular_no}
-Date: {date}
+                                    CIRCULAR
 
-Subject: {event_name} - Event Announcement
+We are pleased to inform all students and faculty members that {event_name} will be organised by the Institute as per the details given below:
 
-Dear Staff and Students,
-
-We are pleased to announce that {event_name} will be organized by the institution as per the following details:
-
-Event: {event_name}
-Date: {event_date}
-Time: {event_time}
-Venue: {venue}
+    Event   : {event_name}
+    Date    : {event_date}
+    Time    : {event_time}
+    Venue   : {venue}
 
 {event_description}
 
+For registration and further details, please contact {contact}.
+
 All are cordially invited to participate and make this event a grand success.
 
-For registration and queries, please contact {contact}.
-
-
-{signature}
-{designation}
-{institution}"""
+{copy_to}"""
     }
 }
 
 
 def get_next_circular_number():
-    """Generate next circular number for the year"""
-    current_year = timezone.now().year
-    last_circular = Circular.objects.filter(
-        created_at__year=current_year
-    ).order_by('-created_at').first()
+    """Generate next circular number using real SIET format: SIET/AD/YYYY-YYYY/NN"""
+    acad = _academic_year()
+    count = Circular.objects.count() + 1
+    return f"SIET/AD/{acad}/{count:02d}"
+
+
+@login_required
+def upload_template(request):
+    """Upload or replace the circular letterhead template"""
+    user_profile = UserProfile.get_by_email(request.user.email)
     
-    if last_circular:
-        # Try to extract number from title or just increment count
-        count = Circular.objects.filter(created_at__year=current_year).count() + 1
-    else:
-        count = 1
+    if not user_profile or not user_profile.can_generate_circular():
+        return render(request, 'circulars/access_denied.html', {
+            'user_profile': user_profile,
+            'user_name': user_profile.name if user_profile else request.user.username,
+            'user_role': user_profile.role if user_profile else 'Unknown',
+        })
     
-    return f"CIR/{current_year}/{count:03d}"
+    active_template = CircularTemplate.get_active_template(request.user)
+    
+    if request.method == 'POST':
+        template_image = request.FILES.get('template_image')
+        template_name = request.POST.get('name', 'Default Template').strip() or 'Default Template'
+        content_top = request.POST.get('content_top_margin', 72)
+        content_bottom = request.POST.get('content_bottom_margin', 45)
+        
+        if not template_image:
+            messages.error(request, 'Please select a template image to upload.')
+            return redirect('circular_upload_template')
+        
+        # Validate file type
+        allowed_types = ['image/png', 'image/jpeg', 'image/jpg']
+        if template_image.content_type not in allowed_types:
+            messages.error(request, 'Only PNG and JPG images are allowed.')
+            return redirect('circular_upload_template')
+        
+        # Validate file size (max 5MB)
+        if template_image.size > 5 * 1024 * 1024:
+            messages.error(request, 'Template image must be less than 5MB.')
+            return redirect('circular_upload_template')
+        
+        try:
+            content_top = int(content_top)
+            content_bottom = int(content_bottom)
+        except (ValueError, TypeError):
+            content_top = 58
+            content_bottom = 45
+        
+        # Deactivate existing templates and create new one
+        CircularTemplate.objects.filter(user=request.user).update(is_active=False)
+        
+        CircularTemplate.objects.create(
+            user=request.user,
+            name=template_name,
+            template_image=template_image,
+            is_active=True,
+            content_top_margin=content_top,
+            content_bottom_margin=content_bottom,
+        )
+        
+        messages.success(request, f'Template "{template_name}" uploaded successfully! You can now generate circulars.')
+        return redirect('circular_gen')
+    
+    context = {
+        'active_template': active_template,
+        'user_profile': user_profile,
+        'user_name': user_profile.name if user_profile else request.user.username,
+        'user_role': user_profile.role if user_profile else 'Unknown',
+        'active_page': 'circulars',
+    }
+    return render(request, 'circulars/upload_template.html', context)
+
+
+@login_required
+def delete_template(request):
+    """Delete the active circular template"""
+    if request.method != 'POST':
+        return redirect('circular_upload_template')
+    
+    CircularTemplate.objects.filter(user=request.user, is_active=True).update(is_active=False)
+    messages.success(request, 'Template removed. Please upload a new template to generate circulars.')
+    return redirect('circular_upload_template')
 
 
 @login_required
@@ -218,6 +257,13 @@ def generator_view(request):
             'user_role': user_profile.role if user_profile else 'Unknown',
         })
     
+    # Check if user has an active template - redirect to upload if not
+    active_template = CircularTemplate.get_active_template(request.user)
+    if not active_template:
+        messages.warning(request, 'Please upload a circular template before generating circulars. '
+                        'The template should include your college logo, header, and signature.')
+        return redirect('circular_upload_template')
+    
     # Get history
     history = Circular.objects.filter(user=request.user).order_by('-created_at')[:10]
     
@@ -230,6 +276,8 @@ def generator_view(request):
         'user_profile': user_profile,
         'user_name': user_profile.name if user_profile else request.user.username,
         'user_role': user_profile.role if user_profile else 'Unknown',
+        'active_page': 'circulars',
+        'active_template': active_template,
     }
     
     # Handle template selection or custom prompt
@@ -238,33 +286,9 @@ def generator_view(request):
     
     if template_type and template_type in CIRCULAR_TEMPLATES:
         template = CIRCULAR_TEMPLATES[template_type]
-        # Generate with default placeholders
-        content = template['template'].format(
-            circular_no=get_next_circular_number(),
-            date=timezone.now().strftime("%d %B %Y"),
-            occasion="[Enter Occasion]",
-            holiday_date="[Enter Date]",
-            exam_type="[Semester/Internal/Model]",
-            academic_year=f"{timezone.now().year}-{timezone.now().year + 1}",
-            start_date="[Start Date]",
-            end_date="[End Date]",
-            meeting_type="[Staff/Department/Emergency]",
-            recipients="All Concerned",
-            meeting_date="[Meeting Date]",
-            meeting_time="[Meeting Time]",
-            venue="[Venue]",
-            agenda="1. [Agenda Item 1]\n2. [Agenda Item 2]\n3. [Agenda Item 3]",
-            subject="[Enter Subject]",
-            content="[Enter your announcement content here]",
-            event_name="[Event Name]",
-            event_date="[Event Date]",
-            event_time="[Event Time]",
-            event_description="[Event Description]",
-            contact="[Contact Person/Department]",
-            signature=user_profile.name if user_profile else "Principal",
-            designation=user_profile.role if user_profile else "Principal",
-            institution="Institution Name"
-        )
+        # Generate with default placeholders — only body content (header/signature in template image)
+        content = _generate_body_content(template['template'], template_type, 
+                                          occasion="[Enter Occasion]", holiday_date="[Enter Date]")
         context['generated_content'] = content
         context['generated_title'] = template['title']
         context['edit_mode'] = True
@@ -273,21 +297,46 @@ def generator_view(request):
     elif auto_holiday:
         # Quick holiday generation from dashboard
         template = CIRCULAR_TEMPLATES['holiday']
-        content = template['template'].format(
-            circular_no=get_next_circular_number(),
-            date=timezone.now().strftime("%d %B %Y"),
-            occasion=auto_holiday,
-            holiday_date="[Enter Date]",
-            signature=user_profile.name if user_profile else "Principal",
-            designation=user_profile.role if user_profile else "Principal",
-            institution="Institution Name"
-        )
+        content = _generate_body_content(template['template'], 'holiday',
+                                          occasion=auto_holiday, holiday_date="[Enter Date]")
         context['generated_content'] = content
         context['generated_title'] = f"Holiday Declaration - {auto_holiday}"
         context['edit_mode'] = True
         context['template_type'] = 'holiday'
     
     return render(request, 'circulars/generator.html', context)
+
+
+def _generate_body_content(template_str, template_type, **kwargs):
+    """Generate only the body content for the circular (no header/signature — those are in the template image)"""
+    circular_no = get_next_circular_number()
+    current_date = timezone.now().strftime("%d.%m.%Y")
+    
+    all_params = {
+        'copy_to': COPY_TO_BLOCK,
+        'circular_no': circular_no,
+        'date': current_date,
+        'occasion': kwargs.get('occasion', '[Enter Occasion]'),
+        'holiday_date': kwargs.get('holiday_date', '[Enter Date]'),
+        'exam_type': '[Semester/Internal/Model]',
+        'academic_year': _academic_year(),
+        'start_date': '[Start Date]',
+        'end_date': '[End Date]',
+        'meeting_type': '[Staff/Department/Emergency]',
+        'recipients': 'Faculty Members and Staff',
+        'meeting_date': '[Meeting Date]',
+        'meeting_time': '[Meeting Time]',
+        'venue': '[Venue]',
+        'agenda': '    1. [Agenda Item 1]\n    2. [Agenda Item 2]\n    3. [Agenda Item 3]',
+        'content': '[Enter your announcement content here]',
+        'event_name': '[Event Name]',
+        'event_date': '[Event Date]',
+        'event_time': '[Event Time]',
+        'event_description': '[Event Description]',
+        'contact': '[Contact Person / Department]',
+    }
+    
+    return template_str.format(**all_params).strip()
 
 
 @login_required
@@ -332,6 +381,7 @@ def view_circular(request, circular_id):
         messages.error(request, "Circular not found.")
         return redirect('circular_gen')
     
+    active_template = CircularTemplate.get_active_template(request.user)
     history = Circular.objects.filter(user=request.user).order_by('-created_at')[:10]
     
     context = {
@@ -344,6 +394,7 @@ def view_circular(request, circular_id):
         'user_profile': user_profile,
         'user_name': user_profile.name if user_profile else request.user.username,
         'user_role': user_profile.role if user_profile else 'Unknown',
+        'active_template': active_template,
     }
     
     return render(request, 'circulars/generator.html', context)
@@ -367,48 +418,211 @@ def delete_circular(request, circular_id):
 
 @login_required
 def generate_ai_content(request):
-    """AJAX endpoint for AI content generation (placeholder for future AI integration)"""
+    """AJAX endpoint for AI content generation using Ollama Llama model"""
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request'}, status=400)
-    
+
     user_profile = UserProfile.get_by_email(request.user.email)
     if not user_profile or not user_profile.can_generate_circular():
         return JsonResponse({'error': 'Permission denied'}, status=403)
-    
+
     try:
         data = json.loads(request.body)
         prompt = data.get('prompt', '')
     except json.JSONDecodeError:
         prompt = request.POST.get('prompt', '')
-    
+
     if not prompt:
         return JsonResponse({'error': 'Prompt is required'}, status=400)
+
+    # Ollama configuration from environment
+    ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+    ollama_model = os.getenv('OLLAMA_MODEL', 'llama3.1:8b')
+
+    circular_no = get_next_circular_number()
+    current_date = timezone.now().strftime("%d.%m.%Y")   # Real SIET date format
+
+    # ── Get past circulars for context ───────────────────────────────
+    past_circulars = Circular.objects.filter(
+        user__email__in=['principal@siet.ac.in', 'admin@siet.ac.in']  # Only official circulars
+    ).order_by('-created_at')[:10]  # Get last 10 circulars
+
+    past_examples = ""
+    if past_circulars.exists():
+        past_examples = "\n\nPAST SIET CIRCULAR EXAMPLES (for reference):\n"
+        for i, circ in enumerate(past_circulars, 1):
+            past_examples += f"\n--- EXAMPLE {i}: {circ.title} ---\n{circ.content[:500]}...\n"
+        past_examples += "\n"
+    else:
+        # If no past circulars, provide enhanced learning context
+        past_examples = "\n\nLEARNING CONTEXT - STUDY THESE PATTERNS:\n" \
+                       "- Holiday circulars: Always specify exact dates, mention hostel mess closure, end with well-wishes\n" \
+                       "- Exam circulars: Include reporting time (15 min early), ID requirements, no electronic devices\n" \
+                       "- Event circulars: Use indented key-value format for date/time/venue, then description\n" \
+                       "- Disciplinary: Firm tone, clear consequences, end with cooperation request\n\n"
+
+    # ── System prompt: teach the model the exact SIET format ──────────────
+    system_prompt = (
+        "You are a professional circular drafting assistant for Sri Shakthi Institute of Engineering and Technology (SIET), "
+        "Coimbatore. You draft official circulars exactly in the format used by the Principal's office.\n\n"
+        "STRICT FORMAT RULES:\n"
+        "1. Do NOT include any letterhead, college name, Ref number, date, or signature block — those are added automatically.\n"
+        "2. On the FIRST line, output ONLY a short title for internal reference, prefixed with 'Title:'. Example: 'Title: Holiday Declaration – Deepavali'\n"
+        "3. Leave a blank line after the Title line.\n"
+        "4. Do NOT write a 'Subject:' line. Real SIET circulars do not have Subject lines — the body starts directly.\n"
+        "5. Write the body in concise, formal paragraphs. No 'Dear All' or salutation — go straight into the content.\n"
+        "6. For holidays: state the holiday period with exact dates, the occasion, mention Mess closure, and end with well-wishes.\n"
+        "7. For exams: state period, instructions (carry ID, report 15 min early, no electronic devices, no malpractice).\n"
+        "8. For meetings: state date, time, venue, agenda items in an indented key-value layout.\n"
+        "9. For disciplinary notices: firmly state the issue, warning, and consequences.\n"
+        "10. For events: state event name, date, time, venue in an indented key-value layout, then a brief description.\n"
+        "11. End the body with a brief closing sentence (e.g., 'We wish you all a happy celebration.' or similar).\n"
+        "12. Do NOT write 'PRINCIPAL' or any signature — it is added automatically.\n"
+        "13. Do NOT write 'Copy to:' or any distribution list — it is added automatically.\n"
+        "14. Use plain text only. No markdown, no bold (**), no bullet symbols like •. Use numbered lists (1. 2. 3.) if needed.\n"
+        "15. Maximum 200 words. Keep it concise as real SIET circulars are brief and to the point.\n"
+        "16. Match the tone of real SIET circulars — formal, direct, authoritative. Use phrases like 'We are pleased to inform you...', "
+        "'This is to inform all students...', 'All are cordially invited...'.\n\n"
+        f"{past_examples}"
+        "REAL SIET CIRCULAR BODY EXAMPLES (these do NOT have Subject lines):\n\n"
+        "--- HOLIDAY EXAMPLE ---\n"
+        "Title: Holiday Declaration – Deepavali\n\n"
+        "We are pleased to inform you that our Institute will observe a holiday from October 31, 2024 to "
+        "November 03, 2024 in celebration of Deepavali. Please note that the Mess will be closed during this holiday period.\n\n"
+        "Regular Classes and activities will resume on November 04, 2024, Monday.\n\n"
+        "We wish you and your family a joyous and prosperous Deepavali. "
+        "May this festive season bring light, happiness, and success in all your endeavors.\n\n"
+        "--- DISCIPLINARY EXAMPLE ---\n"
+        "Title: Lab Uniform – Strict Compliance\n\n"
+        "This circular is to remind all students about the importance of adhering to the Lab Uniform dress code during "
+        "their lab hours. It is mandatory for all students to wear their uniforms during laboratory sessions.\n\n"
+        "It has been noticed that a few students did not wear Lab Uniform during their Lab Hours. "
+        "Students are not allowed to change their uniforms inside the restrooms.\n\n"
+        "Students who do not comply with the uniform policy will be subject to disciplinary action. "
+        "Your cooperation is appreciated.\n\n"
+        "--- GENERAL EXAMPLE ---\n"
+        "Title: Commencement of Second Semester – B.E./B.Tech. 2024-28\n\n"
+        "This is to inform all First Year Students that the Second Semester of the Undergraduate B.E./B.Tech. "
+        "Programmes will begin on February 10, 2028. Students are advised to attend their regular classes from the "
+        "first day of the semester, as attendance is mandatory.\n\n"
+        "Further, all students must ensure that any pending "
+        "fee formalities are completed before the semester begins. We wish all students a successful and productive semester ahead."
+    )
     
-    # TODO: Integrate with actual AI service (OpenAI, Gemini, etc.)
-    # For now, return a template-based response
+    user_message = (
+        f"Draft the body of an official SIET circular for the following request:\n\n"
+        f"\"{prompt}\"\n\n"
+        f"Remember: output ONLY the Title line + body paragraphs. No Subject line, no letterhead, no Ref, no date, no PRINCIPAL signature, no Copy to."
+    )
     
-    generated_content = f"""OFFICIAL CIRCULAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Circular No: {get_next_circular_number()}
-Date: {timezone.now().strftime("%d %B %Y")}
-
-Subject: {prompt[:50]}...
-
-Dear All,
-
-[AI-generated content based on your prompt will appear here]
-
-Your prompt was: "{prompt}"
-
-This is a placeholder response. In production, this will be replaced with actual AI-generated content using services like OpenAI GPT or Google Gemini.
-
-
-{user_profile.name if user_profile else 'Principal'}
-{user_profile.role if user_profile else 'Principal'}"""
-    
-    return JsonResponse({
-        'success': True,
-        'content': generated_content,
-        'title': f"Circular: {prompt[:30]}..."
-    })
+    try:
+        response = requests.post(
+            f"{ollama_url}/api/chat",
+            json={
+                "model": ollama_model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                "stream": False,
+                "options": {
+                    "temperature": 0.6,
+                    "num_predict": 600,
+                }
+            },
+            timeout=120
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        ai_body = result.get('message', {}).get('content', '').strip()
+        # Strip any accidental markdown bold markers
+        ai_body = ai_body.replace('**', '').replace('__', '')
+        
+        if not ai_body:
+            return JsonResponse({'error': 'AI model returned empty response. Please try again.'}, status=500)
+        
+        # Extract title from "Title:" line and remove it from the body
+        title = ""
+        body_lines = ai_body.split('\n')
+        body_start = 0
+        for i, line in enumerate(body_lines):
+            stripped = line.strip()
+            if stripped.lower().startswith('title:'):
+                title = stripped.split(':', 1)[1].strip().strip('\u2013\u2014-').strip()
+                body_start = i + 1
+                break
+            elif stripped.lower().startswith('subject:'):
+                # Fallback: AI may still output Subject: despite instructions
+                title = stripped.split(':', 1)[1].strip().strip('\u2013\u2014-').strip()
+                body_start = i + 1
+                break
+        
+        # Remove the title/subject line and any leading blank lines from body
+        ai_body_clean = '\n'.join(body_lines[body_start:]).strip()
+        
+        # Also strip any trailing "Copy to:" or "PRINCIPAL" the AI may have added
+        clean_lines = ai_body_clean.split('\n')
+        end_idx = len(clean_lines)
+        for i in range(len(clean_lines) - 1, -1, -1):
+            s = clean_lines[i].strip()
+            if s in ('PRINCIPAL', 'Copy to:', '') or s.startswith('\u2022'):
+                end_idx = i
+            else:
+                break
+        ai_body_clean = '\n'.join(clean_lines[:end_idx]).strip()
+        
+        # ── Compose circular content (header/signature are in the template image) ──
+        user_has_template = CircularTemplate.get_active_template(request.user) is not None
+        
+        if user_has_template:
+            generated_content = (
+                f"Ref : {circular_no}                                         {current_date}\n\n"
+                f"                                    CIRCULAR\n\n"
+                f"{ai_body_clean}\n\n"
+                f"{COPY_TO_BLOCK}"
+            )
+        else:
+            generated_content = (
+                f"{INSTITUTION_HEADER}\n\n"
+                f"Dr. N. K. Sakthivel, M.Tech., Ph.D.\n"
+                f"Principal\n\n"
+                f"Ref : {circular_no}                                         {current_date}\n\n"
+                f"                                    CIRCULAR\n\n"
+                f"{ai_body_clean}\n\n"
+                f"                                                                PRINCIPAL\n\n"
+                f"{COPY_TO_BLOCK}"
+            )
+        
+        # Use extracted title, fallback to prompt
+        if not title:
+            title = prompt.strip()[:77] + ("..." if len(prompt) > 77 else "")
+        elif len(title) > 80:
+            title = title[:77] + "..."
+        
+        return JsonResponse({
+            'success': True,
+            'content': generated_content,
+            'title': title
+        })
+        
+    except requests.exceptions.ConnectionError:
+        logger.error("Cannot connect to Ollama server at %s", ollama_url)
+        return JsonResponse({
+            'error': f'Cannot connect to Ollama server at {ollama_url}. Please ensure Ollama is running.'
+        }, status=503)
+    except requests.exceptions.Timeout:
+        logger.error("Ollama request timed out")
+        return JsonResponse({
+            'error': 'AI generation timed out. Please try a simpler prompt or try again later.'
+        }, status=504)
+    except requests.exceptions.RequestException as e:
+        logger.error("Ollama request failed: %s", str(e))
+        return JsonResponse({
+            'error': f'AI service error: {str(e)}'
+        }, status=500)
+    except Exception as e:
+        logger.error("Unexpected error in AI generation: %s", str(e))
+        return JsonResponse({
+            'error': 'An unexpected error occurred. Please try again.'
+        }, status=500)

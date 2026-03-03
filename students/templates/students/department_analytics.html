@@ -164,13 +164,7 @@
                     {% for course in course_breakdown %}
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>
-                            {% if course.course_type == 'UG' %}
-                                🎓 Undergraduate
-                            {% elif course.course_type == 'PG' %}
-                                🎓 Postgraduate
-                            {% else %}
-                                📋 {{ course.course_type|default:"Not Specified" }}
-                            {% endif %}
+                            📋 {{ course.branch_specialization|default:"Not Specified" }}
                         </span>
                         <span class="badge bg-info">{{ course.count }}</span>
                     </div>
@@ -188,7 +182,7 @@
                 <div class="card-body">
                     {% for quota in quota_breakdown %}
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>{{ quota.admission_quota|default:"Not Specified" }}</span>
+                        <span>{{ quota.mq_gq|default:"Not Specified" }}</span>
                         <span class="badge bg-warning text-dark">{{ quota.count }}</span>
                     </div>
                     {% empty %}

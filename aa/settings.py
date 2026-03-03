@@ -11,9 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env', override=True)
 
 
 # Quick-start development settings - unsuitable for production
@@ -81,16 +85,13 @@ WSGI_APPLICATION = 'aa.wsgi.application'
 import os
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "daddy_db"),
-        "USER": os.getenv("DB_USER", "daddy_db_user"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "sq4h50jTNT4h3SyKztett0Mk0MQv7TzK"),
-        "HOST": os.getenv("DB_HOST", "dpg-d5hh65a4d50c73933i70-a.oregon-postgres.render.com"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-        "OPTIONS": {
-            "sslmode": os.getenv("DB_SSLMODE", "require"),
-        },
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'DADDY_DB'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'root'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -133,6 +134,10 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -143,6 +148,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 # Login redirect URL - redirect to pages/home after login
 LOGIN_REDIRECT_URL = '/pages/home/'
+LOGIN_URL = '/login/'
 
 # Custom authentication backend to use email instead of username
 AUTHENTICATION_BACKENDS = [

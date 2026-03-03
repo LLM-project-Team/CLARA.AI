@@ -20,7 +20,7 @@
         </div>
         <ul class="nav-links">
             <li>
-                <a href="{% url 'home' %}" class="{% if active_page == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'pages:home' %}" class="{% if active_page == 'dashboard' %}active{% endif %}">
                     <i class="fa-solid fa-grid-2"></i> Dashboard
                 </a>
             </li>
@@ -41,6 +41,13 @@
                     <i class="fa-solid fa-user-graduate"></i> Students
                 </a>
             </li>
+            {% if user_profile and user_profile.can_access_department_analytics %}
+            <li>
+                <a href="{% url 'students:academic_analytics' %}" class="{% if active_page == 'analytics' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i> Analytics
+                </a>
+            </li>
+            {% endif %}
 
             <li style="margin-top: auto;">
                 <a href="{% url 'users:logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>

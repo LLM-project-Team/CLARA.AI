@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Academic Analytics{% endblock %}
+{% block page_subtitle %}Choose a department to view marks & semester analytics.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        font-size: 1.4rem;
+        color: #7f8c8d;
+    }
+
+    .breadcrumb-nav a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb-nav a:hover {
+        color: #2980b9;
+    }
+
+    .breadcrumb-nav i {
+        margin-right: 0.5rem;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 1.5rem;
+        text-align: left;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .data-table td {
+        padding: 1.5rem;
+        font-size: 1.4rem;
+        color: #2c3e50;
+        border-bottom: 1px solid #ecf0f1;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .row-num {
+        font-weight: 600;
+        color: #95a5a6;
+    }
+
+    .action-btn {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        background: #3498db;
+        color: white;
+    }
+
+    .action-btn:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+    }
+
+    .edit-btn {
+        background: #27ae60;
+    }
+
+    .edit-btn:hover {
+        background: #229954;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #7f8c8d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #bdc3c7;
+    }
+
+    .empty-state h3 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+
+    .empty-state p {
+        font-size: 1.4rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb-nav">
+  <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
+  <i class="fa-solid fa-chevron-right"></i>
+  <span>Academic Analytics</span>
+</div>
+
+<div class="table-container">
+  {% if analytics_data %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Department</th>
+          <th>Total Students</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in analytics_data %}
+          <tr>
+            <td class="row-num">{{ forloop.counter }}</td>
+            <td>{{ row.department.name }}</td>
+            <td>{{ row.student_count }}</td>
+            <td>
+              <a href="{% url 'students:analytics_department_batches' row.department.id %}"
+                 class="action-btn edit-btn">
+                View Analytics
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <i class="fa-solid fa-building-columns"></i>
+      <h3>No Departments Found</h3>
+      <p>Add departments first, then return to Academic Analytics.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

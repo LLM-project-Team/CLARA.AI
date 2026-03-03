@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Academic Analytics - {{ department.name }}{% endblock %}
+{% block page_subtitle %}Select a batch year to view semester analytics{% endblock %}
+
+{% block content %}
+
+<div class="analytics-section">
+    <h3>Active Batches in {{ department.name }}</h3>
+    <div class="batch-grid">
+        {% for batch in batches %}
+        <div class="batch-card" onclick="window.location.href='{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}'">
+            <h4>Batch {{ batch.batch_year }}</h4>
+            <p>Academic Year {{ batch.batch_year }}</p>
+            <div class="card-btn">
+                View Semesters <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="analytics-section">
+    <a href="{% url 'students:academic_analytics' %}" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to All Departments
+    </a>
+</div>
+
+{% endblock %}

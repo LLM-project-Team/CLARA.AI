@@ -6,23 +6,25 @@
 {% block content %}
 <!-- Breadcrumb Navigation -->
 <div class="breadcrumb-nav">
-    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
     <i class="fa-solid fa-chevron-right"></i>
     <a href="{% url 'students:department_list' %}">Departments</a>
     <i class="fa-solid fa-chevron-right"></i>
     {% if department %}
     <a href="{% url 'students:batch_list' department.id %}">{{ department.name }}</a>
     <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:student_list' department.id student.batch_year %}">{{ student.batch_year }}</a>
+    {% if batch_year %}
+    <a href="{% url 'students:student_list' department.id batch_year %}">{{ batch_year }}</a>
     <i class="fa-solid fa-chevron-right"></i>
+    {% endif %}
     {% endif %}
     <span>{{ student.student_name }}</span>
 </div>
 
 <!-- Action Buttons Row -->
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    {% if department %}
-    <a href="{% url 'students:student_list' department.id student.batch_year %}" class="back-button" style="margin: 0;">
+    {% if department and batch_year %}
+    <a href="{% url 'students:student_list' department.id batch_year %}" class="back-button" style="margin: 0;">
         <i class="fa-solid fa-arrow-left"></i> Back to Students
     </a>
     {% else %}
@@ -56,7 +58,7 @@
     </div>
     <div class="profile-info">
         <h2>{{ student.student_name }}</h2>
-        <p>{% if department %}{{ department.full_name }}{% endif %} | Batch {{ student.batch_year }}</p>
+        <p>{% if department %}{{ department.full_name }}{% endif %} {% if batch_year %}| Batch {{ batch_year }}{% endif %}</p>
         <div class="profile-badges">
             {% if student.roll_number %}
             <span class="badge badge-dark"><i class="fa-solid fa-id-card"></i> {{ student.roll_number }}</span>
@@ -176,20 +178,16 @@
                 <span class="value">{% if department %}{{ department.full_name }}{% else %}-{% endif %}</span>
             </div>
             <div class="info-row">
-                <span class="label">Course Type</span>
+                <span class="label">Branch / Specialization</span>
                 <span class="value">
-                    {% if student.course_type %}
-                    <span class="badge badge-primary">{{ student.course_type }}</span>
+                    {% if student.branch_specialization %}
+                    <span class="badge badge-primary">{{ student.branch_specialization }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
             <div class="info-row">
-                <span class="label">Batch Year</span>
-                <span class="value">{{ student.batch_year|default:"-" }}</span>
-            </div>
-            <div class="info-row">
                 <span class="label">Academic Year (Joining)</span>
-                <span class="value">{{ student.academic_year_join|default:"-" }}</span>
+                <span class="value">{{ student.academic_year_joining|default:"-" }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Date of Admission</span>
@@ -198,15 +196,15 @@
             <div class="info-row">
                 <span class="label">Admission Quota</span>
                 <span class="value">
-                    {% if student.admission_quota %}
-                    <span class="badge badge-info">{{ student.admission_quota }}</span>
+                    {% if student.mq_gq %}
+                    <span class="badge badge-info">{{ student.mq_gq }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
             <div class="info-row">
                 <span class="label">Hosteller Status</span>
                 <span class="value">
-                    {% if student.hosteller or student.is_hosteller %}
+                    {% if student.hosteller %}
                     <span class="badge badge-green"><i class="fa-solid fa-check"></i> Hosteller</span>
                     {% else %}
                     <span class="badge badge-orange"><i class="fa-solid fa-times"></i> Day Scholar</span>
@@ -252,16 +250,8 @@
                 <span class="value">{{ student.father_name|default:"-" }}</span>
             </div>
             <div class="info-row">
-                <span class="label">Father's Occupation</span>
-                <span class="value">{{ student.father_occupation|default:"-" }}</span>
-            </div>
-            <div class="info-row">
                 <span class="label">Mother's Name</span>
                 <span class="value">{{ student.mother_name|default:"-" }}</span>
-            </div>
-            <div class="info-row">
-                <span class="label">Mother's Occupation</span>
-                <span class="value">{{ student.mother_occupation|default:"-" }}</span>
             </div>
         </div>
     </div>

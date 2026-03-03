@@ -6,7 +6,7 @@
 {% block content %}
 <!-- Breadcrumb Navigation -->
 <div class="breadcrumb-nav">
-    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
     <i class="fa-solid fa-chevron-right"></i>
     <span>Department Management</span>
 </div>
@@ -25,7 +25,7 @@
 
 <!-- Action Buttons Row -->
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <a href="{% url 'home' %}" class="back-button" style="margin: 0;">
+    <a href="{% url 'pages:home' %}" class="back-button" style="margin: 0;">
         <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
     </a>
     

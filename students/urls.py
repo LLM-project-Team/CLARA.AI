@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from . import views_pdf_analysis
+from . import views_chat
 
 app_name = 'students'
 
@@ -7,9 +9,45 @@ urlpatterns = [
     # Entry point: List of departments
     path('', views.department_list, name='department_list'),
     
+    # PDF Analysis Routes
+    path('pdf-analysis/', views_pdf_analysis.pdf_analysis_home, name='pdf_analysis_home'),
+    path('pdf-analysis/dept/<uuid:department_id>/', views_pdf_analysis.select_batch, name='select_batch'),
+    path('pdf-analysis/dept/<uuid:department_id>/batch/<str:batch_year>/', views_pdf_analysis.select_semester, name='select_semester'),
+    path('pdf-analysis/dept/<uuid:department_id>/batch/<str:batch_year>/sem/<uuid:semester_id>/upload/', views_pdf_analysis.upload_pdf, name='upload_pdf'),
+    path('pdf-analysis/results/<uuid:analysis_id>/', views_pdf_analysis.analysis_results, name='analysis_results'),
+    path('pdf-analysis/verify/<uuid:result_id>/', views_pdf_analysis.verify_result, name='verify_result'),
+    path('pdf-analysis/search/', views_pdf_analysis.search_document, name='search_documents'),
+    path('pdf-analysis/api/query/<uuid:analysis_id>/', views_pdf_analysis.rag_query_api, name='rag_query_api'),
+    
     # Academic Analytics
     path('analytics/', views.academic_analytics, name='academic_analytics'),
-    path('analytics/<uuid:department_id>/', views.department_analytics, name='department_analytics'),
+    path('analytics/<uuid:department_id>/', views.analytics_department_batches, name='analytics_department_batches'),
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/', views.analytics_batch_semesters, name='analytics_batch_semesters'),
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/sem/<int:semester_number>/', views.analytics_semester_details, name='analytics_semester_details'),
+
+    # Subject Management API
+    path('analytics/<uuid:department_id>/sem/<int:semester_number>/subjects/add/', views.subject_add, name='subject_add'),
+    path('analytics/<uuid:department_id>/sem/<int:semester_number>/subjects/update/', views.subject_update, name='subject_update'),
+    path('analytics/<uuid:department_id>/sem/<int:semester_number>/subjects/delete/', views.subject_delete, name='subject_delete'),
+
+    # Analytics AI Chat API
+    path('analytics/chat/', views_chat.analytics_chat_api, name='analytics_chat'),
+
+    # Marks (SubjectResult) CRUD API
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/sem/<int:semester_number>/marks/',
+         views.marks_list_api,   name='marks_list'),
+    path('analytics/marks/<uuid:result_id>/update/',
+         views.marks_update_api, name='marks_update'),
+    path('analytics/marks/<uuid:result_id>/delete/',
+         views.marks_delete_api, name='marks_delete'),
+
+    # End Semester Result CRUD API
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/sem/<int:semester_number>/end-sem/',
+         views.end_sem_list_api,   name='end_sem_list'),
+    path('analytics/end-sem/<uuid:result_id>/update/',
+         views.end_sem_update_api, name='end_sem_update'),
+    path('analytics/end-sem/<uuid:result_id>/delete/',
+         views.end_sem_delete_api, name='end_sem_delete'),
     
     # Add new student
     path('add/', views.student_add, name='student_add'),

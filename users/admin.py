@@ -188,11 +188,11 @@ class UserProfileAdmin(admin.ModelAdmin):
     Read-only admin view for UserProfile (cloud DB).
     Admin can view all users and their roles from the cloud database.
     """
-    list_display = ('name', 'email', 'role', 'department_id', 'is_active', 'last_login')
+    list_display = ('full_name', 'email', 'role', 'department_id', 'is_active', 'last_login')
     list_filter = ('role', 'is_active')
-    search_fields = ('name', 'email')
-    ordering = ('role', 'name')
-    readonly_fields = ('id', 'institution_id', 'department_id', 'name', 'email', 
+    search_fields = ('full_name', 'email')
+    ordering = ('role', 'full_name')
+    readonly_fields = ('id', 'institution_id', 'department_id', 'full_name', 'email', 
                        'password_hash', 'role', 'is_active', 'last_login', 'created_at')
     
     def has_add_permission(self, request):

@@ -87,7 +87,7 @@
                 <div class="col-md-2 mb-3">
                     <div class="card h-100 border-primary">
                         <div class="card-body text-center">
-                            <h5 class="text-primary">{{ batch.batch_year|default:"N/A" }}</h5>
+                            <h5 class="text-primary">{{ batch.academic_year_joining|default:"N/A" }}</h5>
                             <h3>{{ batch.count }}</h3>
                             <small class="text-muted">students</small>
                         </div>
@@ -144,7 +144,7 @@
                             <td class="text-center">{{ data.hosteller_count }}</td>
                             <td class="text-center">{{ data.day_scholar_count }}</td>
                             <td class="text-center">
-                                <a href="{% url 'students:department_analytics' data.department.id %}" 
+                                <a href="{% url 'students:analytics_department_batches' data.department.id %}" 
                                    class="btn btn-sm btn-outline-primary">
                                     View Details
                                 </a>

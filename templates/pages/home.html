@@ -5,12 +5,26 @@
 
 {% block content %}
 
-    {% if can_generate_circular %}
+    {% if can_generate_circular and system_insight.has_insight %}
     <div class="ai-status">
-        <div class="status-dot"></div>
+        <a href="{% url 'circular_gen' %}?auto_holiday={{ system_insight.auto_holiday_param }}" class="insight-generate-btn">
+            <i class="fa-solid fa-magic-wand-sparkles"></i>
+            <span>Generate Now</span>
+        </a>
+        <div class="insight-content">
+            <div class="status-dot"></div>
+            <div>
+                <strong style="font-size: 1.4rem; color: #2d3436;">System Insight:</strong>
+                <span style="font-size: 1.4rem; color: #636e72;"> {{ system_insight.insight_text }}</span>
+            </div>
+        </div>
+    </div>
+    {% elif can_generate_circular %}
+    <div class="ai-status">
+        <div class="status-dot" style="background-color: #95a5a6;"></div>
         <div>
             <strong style="font-size: 1.4rem; color: #2d3436;">System Insight:</strong>
-            <span style="font-size: 1.4rem; color: #636e72;"> Upcoming Holiday detected: <strong>Republic Day (Jan 26)</strong>. Circular draft recommended.</span>
+            <span style="font-size: 1.4rem; color: #636e72;"> {{ system_insight.insight_text }}</span>
         </div>
     </div>
     {% endif %}
@@ -19,7 +33,7 @@
 
         <!-- AI Circular Generator - PRINCIPAL & DEAN only -->
         {% if can_generate_circular %}
-        <div class="feature-card" onclick="window.location.href='{% url 'circular_gen' %}?auto_holiday=Republic Day'">
+        <div class="feature-card" onclick="window.location.href='{% url 'circular_gen' %}'">
             <div class="icon-container">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
@@ -33,14 +47,14 @@
 
         <!-- AI Features - PRINCIPAL & DEAN only -->
         {% if can_use_ai_features %}
-        <div class="feature-card">
+        <div class="feature-card" onclick="window.location.href='{% url 'students:academic_analytics' %}'">
             <div class="icon-container" style="background-color: #e3f2fd;">
                 <i class="fa-solid fa-chart-pie" style="color: #2196f3;"></i>
             </div>
             <h3>Academic Analytics</h3>
-            <p>View student performance trends and attendance reports powered by LLM insights.</p>
+            <p>Semester-wise performance and marks analytics.</p>
             <div class="card-btn" style="color: #2196f3;">
-                View Reports <i class="fa-solid fa-arrow-right"></i>
+                View Departments <i class="fa-solid fa-arrow-right"></i>
             </div>
         </div>
 
@@ -103,6 +117,20 @@
             <p>View staff records, contact information, and department assignments (read-only access).</p>
             <div class="card-btn" style="color: #7b1fa2;">
                 View Staff <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Academic Analytics - HOD (department only), Principal/Dean (all) -->
+        {% if can_access_analytics and not can_use_ai_features %}
+        <div class="feature-card" onclick="window.location.href='{% url 'students:academic_analytics' %}'">
+            <div class="icon-container" style="background-color: #e3f2fd;">
+                <i class="fa-solid fa-chart-pie" style="color: #2196f3;"></i>
+            </div>
+            <h3>Academic Analytics</h3>
+            <p>Semester-wise performance and marks analytics for your department.</p>
+            <div class="card-btn" style="color: #2196f3;">
+                View Analytics <i class="fa-solid fa-arrow-right"></i>
             </div>
         </div>
         {% endif %}

@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis Results - {{ analyzed_doc.original_filename }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
+            <li class="breadcrumb-item active">Results</li>
+        </ol>
+    </nav>
+
+    <!-- Document Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-2">
+                <i class="bi bi-file-pdf text-danger"></i> {{ analyzed_doc.original_filename }}
+            </h1>
+            <p class="text-muted">
+                {{ analyzed_doc.document_type|upper }} | 
+                Batch: {{ analyzed_doc.program_semester.batch_year }} | 
+                Semester: {{ analyzed_doc.program_semester.number }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="badge bg-{% if analyzed_doc.status == 'completed' %}success{% elif analyzed_doc.status == 'failed' %}danger{% else %}warning{% endif %} p-2">
+                <i class="bi bi-circle-fill"></i> {{ analyzed_doc.get_status_display|upper }}
+            </span>
+            {% if analyzed_doc.is_indexed %}
+            <span class="badge bg-info p-2 ms-2">
+                <i class="bi bi-lightning"></i> RAG Indexed
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h5 class="text-primary">{{ stats.total_records }}</h5>
+                    <p class="text-muted mb-0">Total Records</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h5 class="text-success">{{ stats.verified_records }}</h5>
+                    <p class="text-muted mb-0">Verified</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h5 class="text-warning">{{ stats.pending_verification }}</h5>
+                    <p class="text-muted mb-0">Pending Review</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h5 class="text-info">{{ analyzed_doc.total_pages }}</h5>
+                    <p class="text-muted mb-0">Pages</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Info -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">Document Information</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Uploaded:</strong> {{ analyzed_doc.upload_date|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Processed:</strong> {% if analyzed_doc.processed_date %}{{ analyzed_doc.processed_date|date:"M d, Y H:i" }}{% else %}<span class="text-muted">Processing...</span>{% endif %}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>File Size:</strong> {% if analyzed_doc.file_size %}{{ analyzed_doc.file_size|filesizeformat }}{% else %}-{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RAG Search Box -->
+    {% if analyzed_doc.is_indexed %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="bi bi-lightning"></i> Search Document with AI</h6>
+        </div>
+        <div class="card-body">
+            <form id="rag-search-form" class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="rag-query" placeholder="Search for marks, subjects, grades, etc..." required>
+                    <button class="btn btn-info" type="submit">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </form>
+            <div id="rag-results" class="mt-3" style="display:none;">
+                <h6>Search Results:</h6>
+                <div id="rag-results-list"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Extracted Results Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="mb-0">Extracted Data</h6>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="{% url 'students:search_documents' %}" class="btn btn-sm btn-outline-secondary">
+                        All Documents
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Student Name</th>
+                        <th>Subject</th>
+                        <th>Internal 1</th>
+                        <th>Internal 2</th>
+                        <th>Internal 3</th>
+                        <th>End Sem</th>
+                        <th>Grade</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>
+                            {% if result.student %}
+                            <a href="{% url 'students:student_detail' student_id=result.student.id %}">
+                                {{ result.student.roll_number }}
+                            </a>
+                            {% else %}
+                            <em class="text-muted">Not matched</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.student %}
+                            {{ result.student.student_name }}
+                            {% else %}
+                            <em class="text-muted">Unknown</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.subject %}
+                            <small><strong>{{ result.subject.code }}</strong></small><br>
+                            <small class="text-muted">{{ result.subject.name|truncatewords:4 }}</small>
+                            {% else %}
+                            <em class="text-muted">Not matched</em>
+                            {% endif %}
+                        </td>
+                        <td>{{ result.internal1|default:"-" }}</td>
+                        <td>{{ result.internal2|default:"-" }}</td>
+                        <td>{{ result.internal3|default:"-" }}</td>
+                        <td>{{ result.end_sem_marks|default:"-" }}</td>
+                        <td>
+                            {% if result.grade %}
+                            <span class="badge bg-secondary">{{ result.grade }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ result.confidence_score }}%</small>
+                        </td>
+                        <td>
+                            {% if result.is_verified %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Verified</span>
+                            {% else %}
+                            <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'students:verify_result' result_id=result.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Review
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <p class="text-muted mb-0">
+                                {% if analyzed_doc.status == 'processing' %}
+                                <i class="bi bi-hourglass-split"></i> Processing document...
+                                {% elif analyzed_doc.status == 'failed' %}
+                                <i class="bi bi-exclamation-triangle"></i> An error occurred during processing.
+                                <br><small class="text-muted">{{ analyzed_doc.error_message }}</small>
+                                {% else %}
+                                No results found.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-muted text-center">
+            Page {{ results.number }} of {{ results.paginator.num_pages }}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if results.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if results.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ results.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in results.paginator.page_range %}
+            <li class="page-item {% if results.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if results.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ results.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+// RAG Search functionality
+document.getElementById('rag-search-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const query = document.getElementById('rag-query').value;
+    
+    fetch('{% url "students:rag_query_api" analysis_id=analyzed_doc.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new URLSearchParams({
+            'query': query
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const resultsList = document.getElementById('rag-results-list');
+            resultsList.innerHTML = '';
+            data.results.forEach((result, index) => {
+                const div = document.createElement('div');
+                div.className = 'card mb-2';
+                div.innerHTML = `
+                    <div class="card-body">
+                        <p class="mb-0"><small>${result}</small></p>
+                    </div>
+                `;
+                resultsList.appendChild(div);
+            });
+            document.getElementById('rag-results').style.display = 'block';
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+</script>
+{% endblock %}

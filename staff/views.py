@@ -32,7 +32,7 @@ def department_list(request):
     
     dept_data = []
     for dept in departments:
-        staff_count = Staff.objects.filter(department_id=dept.id, is_active=True).count()
+        staff_count = Staff.objects.filter(department_id=dept.id, is_currently_associated=True).count()
         dept_data.append({
             'department': dept,
             'staff_count': staff_count,
@@ -75,16 +75,16 @@ def staff_list(request, department_id):
     department = get_object_or_404(Department, id=department_id)
     
     # Get staff for this department
-    staff_members = Staff.objects.filter(department_id=department_id, is_active=True)
+    staff_members = Staff.objects.filter(department_id=department_id, is_currently_associated=True)
     
     # Search functionality
     search_query = request.GET.get('search', '')
     if search_query:
         staff_members = staff_members.filter(
             Q(name__icontains=search_query) |
-            Q(staff_code__icontains=search_query) |
+            Q(employee_code__icontains=search_query) |
             Q(designation__icontains=search_query) |
-            Q(official_email__icontains=search_query)
+            Q(email__icontains=search_query)
         )
     
     # Filter by designation
@@ -102,7 +102,7 @@ def staff_list(request, department_id):
     # Get unique designations for filter dropdown
     designations = Staff.objects.filter(
         department_id=department_id, 
-        is_active=True
+        is_currently_associated=True
     ).values_list('designation', flat=True).distinct()
     designations = [d for d in designations if d]
     
@@ -190,25 +190,25 @@ def staff_add(request, department_id=None):
             
             # Get form data
             dept_id = request.POST.get('department_id')
-            salutation = request.POST.get('salutation', '')
             name = request.POST.get('name', '')
-            staff_code = request.POST.get('staff_code', '')
+            employee_code = request.POST.get('staff_code', '') or request.POST.get('employee_code', '')
             designation = request.POST.get('designation', '')
-            qualification = request.POST.get('qualification', '')
-            official_email = request.POST.get('official_email', '')
-            date_of_join = request.POST.get('date_of_join') or None
+            highest_qualification = request.POST.get('qualification', '') or request.POST.get('highest_qualification', '')
+            email = request.POST.get('official_email', '') or request.POST.get('email', '')
+            date_of_joining = request.POST.get('date_of_join') or request.POST.get('date_of_joining') or None
+            mobile_number = request.POST.get('mobile_number', '')
             
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO staff (
-                        id, institution_id, department_id, salutation, name, 
-                        staff_code, designation, qualification, official_email, 
-                        date_of_join, is_active, created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        id, institution_id, department_id, name, 
+                        employee_code, designation, highest_qualification, email, 
+                        date_of_joining, is_currently_associated, created_at, mobile_number
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
                 """, [
-                    str(staff_id), institution_id, dept_id or None, salutation, name,
-                    staff_code, designation, qualification, official_email,
-                    date_of_join, True
+                    str(staff_id), institution_id, dept_id or None, name,
+                    employee_code, designation, highest_qualification, email,
+                    date_of_joining, True, mobile_number
                 ])
             
             messages.success(request, f'Staff member "{name}" added successfully!')
@@ -256,32 +256,30 @@ def staff_edit(request, staff_id):
         try:
             # Get form data
             dept_id = request.POST.get('department_id')
-            salutation = request.POST.get('salutation', '')
             name = request.POST.get('name', '')
-            staff_code = request.POST.get('staff_code', '')
+            employee_code = request.POST.get('staff_code', '') or request.POST.get('employee_code', '')
             designation = request.POST.get('designation', '')
-            qualification = request.POST.get('qualification', '')
-            official_email = request.POST.get('official_email', '')
-            date_of_join = request.POST.get('date_of_join') or None
-            is_active = request.POST.get('is_active') == 'on'
+            highest_qualification = request.POST.get('qualification', '') or request.POST.get('highest_qualification', '')
+            email = request.POST.get('official_email', '') or request.POST.get('email', '')
+            date_of_joining = request.POST.get('date_of_join') or request.POST.get('date_of_joining') or None
+            is_currently_associated = request.POST.get('is_active') == 'on' or request.POST.get('is_currently_associated') == 'on'
             
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE staff SET
                         department_id = %s,
-                        salutation = %s,
                         name = %s,
-                        staff_code = %s,
+                        employee_code = %s,
                         designation = %s,
-                        qualification = %s,
-                        official_email = %s,
-                        date_of_join = %s,
-                        is_active = %s
+                        highest_qualification = %s,
+                        email = %s,
+                        date_of_joining = %s,
+                        is_currently_associated = %s
                     WHERE id = %s
                 """, [
-                    dept_id or None, salutation, name, staff_code,
-                    designation, qualification, official_email,
-                    date_of_join, is_active, str(staff_id)
+                    dept_id or None, name, employee_code,
+                    designation, highest_qualification, email,
+                    date_of_joining, is_currently_associated, str(staff_id)
                 ])
             
             messages.success(request, f'Staff member "{name}" updated successfully!')
@@ -320,10 +318,10 @@ def staff_delete(request, staff_id):
     
     if request.method == 'POST':
         try:
-            # Soft delete - set is_active to False
+            # Soft delete - set is_currently_associated to False
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    UPDATE staff SET is_active = FALSE WHERE id = %s
+                    UPDATE staff SET is_currently_associated = FALSE WHERE id = %s
                 """, [str(staff_id)])
             
             messages.success(request, f'Staff member "{staff.name}" has been deactivated.')

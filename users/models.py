@@ -99,7 +99,7 @@ class UserProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     institution_id = models.UUIDField(null=True, blank=True)
     department_id = models.UUIDField(null=True, blank=True)
-    name = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=255, db_column='full_name')
     email = models.CharField(max_length=120, unique=True)
     password_hash = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=Role.choices)
@@ -111,8 +111,12 @@ class UserProfile(models.Model):
         db_table = 'users'  # Maps to existing 'users' table
         managed = False     # Django won't create/alter this table
 
+    @property
+    def name(self):
+        return self.full_name
+
     def __str__(self):
-        return f"{self.name} ({self.role})"
+        return f"{self.full_name} ({self.role})"
     
     @classmethod
     def get_by_email(cls, email):

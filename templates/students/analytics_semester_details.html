@@ -1,0 +1,1861 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Analytics - {{ department.name }} {{ batch_year }} {{ semester.name }}{% endblock %}
+{% block page_subtitle %}Internal and end-semester marks analysis{% endblock %}
+
+{% block content %}
+
+<!-- Summary Cards -->
+<div class="sem-section">
+    <p class="sem-label">{{ semester.name }} Summary</p>
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-label">Total Students</span>
+            <span class="stat-value">{{ students|length }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Subjects</span>
+            <span class="stat-value" id="subject-count">{{ subjects|length }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Status</span>
+            <span class="status-badge status-{{ program_semester.status|default:'upcoming' }}">
+                {{ program_semester.status|default:"upcoming"|title }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Unified Tab + Filter Panel -->
+<div class="panel">
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn {% if active_tab == 'internals' %}active{% endif %}"
+                onclick="switchTab('internals')">
+            <i class="fa-solid fa-clipboard-list"></i>
+            <span>Internals</span>
+        </button>
+        <button class="tab-btn {% if active_tab == 'end_semester' %}active{% endif %}"
+                onclick="switchTab('end_semester')">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span>End Semester</span>
+        </button>
+        <button class="tab-btn {% if active_tab == 'subjects' %}active{% endif %}"
+                onclick="switchTab('subjects')">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Subjects</span>
+            <span class="tab-badge">{{ subjects|length }}</span>
+        </button>
+
+    </div>
+
+    <!-- Filter Bar (only for marks tabs) -->
+    {% if active_tab != 'subjects' %}
+    <div class="filter-bar">
+        <div class="filter-row">
+            {% if active_tab == 'internals' %}
+            <div class="filter-item">
+                <label><i class="fa-solid fa-layer-group"></i> Internal</label>
+                <select id="internal-select" onchange="updateFilters()">
+                    <option value="1" {% if selected_internal == '1' %}selected{% endif %}>Internal 1</option>
+                    <option value="2" {% if selected_internal == '2' %}selected{% endif %}>Internal 2</option>
+                    <option value="3" {% if selected_internal == '3' %}selected{% endif %}>Internal 3</option>
+                </select>
+            </div>
+            {% endif %}
+            <div class="filter-item">
+                <label><i class="fa-solid fa-book"></i> Subject</label>
+                <select id="subject-select" onchange="updateFilters()">
+                    <option value="">— Select Subject —</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.code }}"
+                            {% if selected_subject_code == subject.code %}selected{% endif %}>
+                        {{ subject.code }} — {{ subject.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if selected_subject_code %}
+            <div class="filter-item filter-item-action">
+                {% for subject in subjects %}{% if subject.code == selected_subject_code %}
+                <button class="btn btn-outline-primary"
+                        onclick="openEditModal('{{ subject.code }}','{{ subject.name|escapejs }}',{{ subject.credits }})">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Subject
+                </button>
+                {% endif %}{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ====== SUBJECTS TAB CONTENT ====== -->
+{% if active_tab == 'subjects' %}
+<div class="panel subjects-panel">
+    <div class="subjects-header">
+        <div class="subjects-header-left">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Subjects for {{ department.name }} — {{ semester.name }}</span>
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+            <i class="fa-solid fa-plus"></i> Add Subject
+        </button>
+    </div>
+
+    {% if subjects %}
+    <div class="table-container">
+        <table class="data-table" id="subjects-table">
+            <thead>
+                <tr>
+                    <th width="120">Code</th>
+                    <th>Subject Name</th>
+                    <th width="90" style="text-align:center;">Credits</th>
+                    <th width="130" style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="subjects-tbody">
+                {% for subject in subjects %}
+                <tr id="row-{{ subject.code }}">
+                    <td><span class="code-pill">{{ subject.code }}</span></td>
+                    <td class="subject-name-cell">{{ subject.name }}</td>
+                    <td style="text-align:center;">
+                        <span class="credits-badge">{{ subject.credits }} cr</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="action-btns">
+                            <button class="icon-btn edit-btn"
+                                    title="Edit"
+                                    onclick="openEditModal('{{ subject.code }}','{{ subject.name|escapejs }}',{{ subject.credits }})">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="icon-btn delete-btn"
+                                    title="Delete"
+                                    onclick="deleteSubject('{{ subject.code }}','{{ subject.name|escapejs }}')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-data">
+        <i class="fa-solid fa-book"></i>
+        <p>No subjects added yet for this semester.</p>
+        <button class="btn btn-primary" onclick="openAddModal()">
+            <i class="fa-solid fa-plus"></i> Add First Subject
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ====== MARKS TABS CONTENT ====== -->
+{% else %}
+{% if results_data %}
+<div class="panel table-panel">
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    {% if active_tab == 'internals' %}
+                    <th>Internal {{ selected_internal }} Marks</th>
+                    {% else %}
+                    <th>Marks</th>
+                    <th>Max Marks</th>
+                    <th>Grade</th>
+                    <th>Grade Points</th>
+                    <th>Status</th>
+                    <th>SGPA</th>
+                    <th>Arrears</th>
+                    {% endif %}
+                    <th class="act-col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results_data %}
+                <tr id="marks-row-{{ result.result_id }}" class="{% if result.grade == 'U' %}arrear-row{% endif %}">
+                    <td>{{ result.student.roll_number }}</td>
+                    <td>{{ result.student.student_name }}</td>
+                    {% if active_tab == 'internals' %}
+                    <td>{{ result.mark|default:"—" }}</td>
+                    {% else %}
+                    <td>{{ result.marks|default:"—" }}</td>
+                    <td>{{ result.max_marks|default:"—" }}</td>
+                    <td><span class="grade-badge {% if result.grade == 'U' %}fail{% endif %}">{{ result.grade|default:"—" }}</span></td>
+                    <td>{{ result.grade_points|default:"—" }}</td>
+                    <td>
+                        <span class="status-badge {% if result.result_status == 'FAIL' %}fail{% elif result.result_status == 'PASS' %}pass{% endif %}">
+                            {{ result.result_status|default:"—" }}
+                        </span>
+                    </td>
+                    <td>{{ result.summary.sgpa|default:"—"|floatformat:2 }}</td>
+                    <td>
+                        {% if result.summary %}
+                        <span class="arrear-count {% if result.summary.arrear_count > 0 %}has-arrears{% endif %}">
+                            {{ result.summary.arrear_count }}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="act-col">
+                        <div class="action-btns">
+                            <button class="icon-btn edit-btn" title="Edit marks"
+                                    onclick="toggleEditRow('{{ result.result_id }}')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="icon-btn delete-btn" title="Delete record"
+                                    onclick="inlineDeleteRow('{{ result.result_id }}')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="edit-row-{{ result.result_id }}" class="edit-expand-row" style="display:none;">
+                    <td colspan="{% if active_tab == 'internals' %}4{% else %}10{% endif %}" class="edit-expand-cell">
+                        <div class="edit-fields">
+                            {% if active_tab == 'internals' %}
+                            <div class="edit-field-group">
+                                <label>I1</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-internal1"
+                                       value="{{ result.internal1|default:'' }}" placeholder="—">
+                                <label>I2</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-internal2"
+                                       value="{{ result.internal2|default:'' }}" placeholder="—">
+                                <label>I3</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-internal3"
+                                       value="{{ result.internal3|default:'' }}" placeholder="—">
+                                <label>End Sem</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-end_sem_marks"
+                                       value="{{ result.end_sem_marks|default:'' }}" placeholder="—">
+                                <label>Grade</label>
+                                <input class="cell-input grade-input" id="ef-{{ result.result_id }}-grade"
+                                       value="{{ result.grade|default:'' }}" placeholder="—">
+                                <label>GP</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-grade_points"
+                                       value="{{ result.grade_points|default:'' }}" placeholder="—">
+                            </div>
+                            {% else %}
+                            <div class="edit-field-group">
+                                <label>Marks</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-marks"
+                                       value="{{ result.marks|default:'' }}" placeholder="—">
+                                <label>Max Marks</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-max_marks"
+                                       value="{{ result.max_marks|default:'' }}" placeholder="—">
+                                <label>Grade</label>
+                                <input class="cell-input grade-input" id="ef-{{ result.result_id }}-grade"
+                                       value="{{ result.grade|default:'' }}" placeholder="—">
+                                <label>GP</label>
+                                <input class="cell-input" id="ef-{{ result.result_id }}-grade_points"
+                                       value="{{ result.grade_points|default:'' }}" placeholder="—">
+                                <label>Status</label>
+                                <select class="cell-input" id="ef-{{ result.result_id }}-result_status">
+                                    <option value="">—</option>
+                                    <option value="PASS" {% if result.result_status == 'PASS' %}selected{% endif %}>PASS</option>
+                                    <option value="FAIL" {% if result.result_status == 'FAIL' %}selected{% endif %}>FAIL</option>
+                                    <option value="AB" {% if result.result_status == 'AB' %}selected{% endif %}>AB</option>
+                                    <option value="WH" {% if result.result_status == 'WH' %}selected{% endif %}>WH</option>
+                                </select>
+                            </div>
+                            {% endif %}
+                            <div class="edit-actions">
+                                <button class="btn btn-primary btn-sm"
+                                        onclick="saveEditRow('{{ result.result_id }}')">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save
+                                </button>
+                                <button class="btn btn-secondary btn-sm"
+                                        onclick="toggleEditRow('{{ result.result_id }}')">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif selected_subject_code %}
+<div class="panel"><div class="no-data">
+    <i class="fa-solid fa-circle-info"></i>
+    <p>No data available for the selected subject.</p>
+</div></div>
+{% else %}
+<div class="panel"><div class="no-data">
+    <i class="fa-solid fa-filter"></i>
+    <p>Select a subject above to view the marks.</p>
+</div></div>
+{% endif %}
+{% endif %}
+
+<!-- Back Navigation -->
+<div class="nav-row">
+    <a href="{% url 'students:analytics_batch_semesters' department.id batch_year %}" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to Semesters
+    </a>
+</div>
+
+
+<!-- ============ ADD SUBJECT MODAL ============ -->
+<div id="addModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <div class="modal-hdr-left">
+                <i class="fa-solid fa-plus-circle"></i>
+                <h3 id="addModalTitle">Add New Subject</h3>
+            </div>
+            <button class="close-btn" onclick="closeAddModal()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-bdy">
+            <div class="context-info">
+                <span><i class="fa-solid fa-building"></i> {{ department.name }}</span>
+                <span><i class="fa-solid fa-calendar"></i> {{ batch_year }}</span>
+                <span><i class="fa-solid fa-graduation-cap"></i> {{ semester.name }}</span>
+            </div>
+            <div id="addAlert" class="alert" style="display:none;"></div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="addCode">Subject Code <span class="req">*</span></label>
+                    <input type="text" id="addCode" placeholder="e.g. CS301" maxlength="20">
+                    <span class="hint">Unique code within this department &amp; semester</span>
+                </div>
+                <div class="form-field">
+                    <label for="addCredits">Credits <span class="req">*</span></label>
+                    <input type="number" id="addCredits" value="3" min="1" max="10">
+                </div>
+                <div class="form-field full-width">
+                    <label for="addName">Subject Name <span class="req">*</span></label>
+                    <input type="text" id="addName" placeholder="e.g. Data Structures" maxlength="200">
+                </div>
+            </div>
+        </div>
+        <div class="modal-ftr">
+            <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" id="addSaveBtn" onclick="saveNewSubject()">
+                <i class="fa-solid fa-floppy-disk"></i> Add Subject
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============ EDIT SUBJECT MODAL ============ -->
+<div id="editModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <div class="modal-hdr-left">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <h3 id="editModalTitle">Edit Subject</h3>
+            </div>
+            <button class="close-btn" onclick="closeEditModal()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-bdy">
+            <div class="context-info">
+                <span><i class="fa-solid fa-building"></i> {{ department.name }}</span>
+                <span><i class="fa-solid fa-calendar"></i> {{ batch_year }}</span>
+                <span><i class="fa-solid fa-graduation-cap"></i> {{ semester.name }}</span>
+            </div>
+            <div id="editAlert" class="alert" style="display:none;"></div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="editCode">Subject Code</label>
+                    <input type="text" id="editCode" readonly class="readonly-input">
+                </div>
+                <div class="form-field">
+                    <label for="editCredits">Credits <span class="req">*</span></label>
+                    <input type="number" id="editCredits" min="1" max="10">
+                </div>
+                <div class="form-field full-width">
+                    <label for="editName">Subject Name <span class="req">*</span></label>
+                    <input type="text" id="editName" maxlength="200">
+                </div>
+            </div>
+        </div>
+        <div class="modal-ftr">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditSubject()">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// ─── URL helpers ────────────────────────────────────────────────────────────
+const API_ADD    = "{% url 'students:subject_add'    department.id semester.number %}";
+const API_UPDATE = "{% url 'students:subject_update' department.id semester.number %}";
+const API_DELETE = "{% url 'students:subject_delete' department.id semester.number %}";
+
+function csrfToken() {
+    return document.cookie.split(';').map(c=>c.trim())
+        .find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+async function apiPost(url, data) {
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': csrfToken()},
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+// ─── Tab / filter navigation ─────────────────────────────────────────────────
+function switchTab(tab) {
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    url.searchParams.delete('subject');
+    url.searchParams.delete('internal');
+    window.location.href = url.toString();
+}
+
+function updateFilters() {
+    const internal = document.getElementById('internal-select')?.value || '';
+    const subject  = document.getElementById('subject-select')?.value  || '';
+    const url = new URL(window.location);
+    url.searchParams.set('tab', '{{ active_tab }}');
+    internal ? url.searchParams.set('internal', internal) : url.searchParams.delete('internal');
+    subject  ? url.searchParams.set('subject',  subject)  : url.searchParams.delete('subject');
+    window.location.href = url.toString();
+}
+
+// ─── Modal helpers ────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function showAlert(id, msg, type='error') {
+    const el = document.getElementById(id);
+    el.className = 'alert alert-' + type;
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
+
+// ─── Add Subject ─────────────────────────────────────────────────────────────
+function openAddModal() {
+    document.getElementById('addCode').value    = '';
+    document.getElementById('addName').value    = '';
+    document.getElementById('addCredits').value = '3';
+    hideAlert('addAlert');
+    openModal('addModal');
+}
+function closeAddModal() { closeModal('addModal'); }
+
+async function saveNewSubject() {
+    const code    = document.getElementById('addCode').value.trim().toUpperCase();
+    const name    = document.getElementById('addName').value.trim();
+    const credits = parseInt(document.getElementById('addCredits').value);
+
+    if (!code || !name) return showAlert('addAlert','Code and Name are required.');
+    if (credits < 1 || credits > 10) return showAlert('addAlert','Credits must be 1–10.');
+
+    const btn = document.getElementById('addSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding…';
+
+    const res = await apiPost(API_ADD, {code, name, credits});
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Add Subject';
+
+    if (res.success) {
+        closeAddModal();
+        appendSubjectRow(res.subject);
+        updateSubjectCount(1);
+        updateSubjectDropdown('add', res.subject);
+        showToast(`"${res.subject.code}" added successfully.`, 'success');
+    } else {
+        showAlert('addAlert', res.error || 'Failed to add subject.');
+    }
+}
+
+// ─── Edit Subject ─────────────────────────────────────────────────────────────
+function openEditModal(code, name, credits) {
+    document.getElementById('editCode').value    = code;
+    document.getElementById('editName').value    = name;
+    document.getElementById('editCredits').value = credits;
+    hideAlert('editAlert');
+    openModal('editModal');
+}
+function closeEditModal() { closeModal('editModal'); }
+
+async function saveEditSubject() {
+    const code    = document.getElementById('editCode').value.trim();
+    const name    = document.getElementById('editName').value.trim();
+    const credits = parseInt(document.getElementById('editCredits').value);
+
+    if (!name) return showAlert('editAlert','Subject Name is required.');
+    if (credits < 1 || credits > 10) return showAlert('editAlert','Credits must be 1–10.');
+
+    const btn = document.getElementById('editSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+
+    const res = await apiPost(API_UPDATE, {code, name, credits});
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+
+    if (res.success) {
+        closeEditModal();
+        updateSubjectRow(res.subject);
+        updateSubjectDropdown('update', res.subject);
+        showToast(`"${code}" updated successfully.`, 'success');
+    } else {
+        showAlert('editAlert', res.error || 'Failed to update subject.');
+    }
+}
+
+// ─── Delete Subject ───────────────────────────────────────────────────────────
+async function deleteSubject(code, name) {
+    if (!confirm(`Delete subject "${code} – ${name}"?\n\nThis will also remove all associated marks.`)) return;
+
+    const res = await apiPost(API_DELETE, {code});
+    if (res.success) {
+        const row = document.getElementById('row-' + code);
+        if (row) row.remove();
+        updateSubjectCount(-1);
+        updateSubjectDropdown('delete', {code});
+        showToast(`"${code}" deleted.`, 'success');
+    } else {
+        showToast(res.error || 'Failed to delete subject.', 'error');
+    }
+}
+
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
+function updateSubjectCount(delta) {
+    const el = document.getElementById('subject-count');
+    if (el) el.textContent = parseInt(el.textContent||0) + delta;
+    const badge = document.querySelector('.tab-badge');
+    if (badge) badge.textContent = parseInt(badge.textContent||0) + delta;
+}
+
+function appendSubjectRow(subject) {
+    const tbody = document.getElementById('subjects-tbody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + subject.code;
+    tr.innerHTML = `
+        <td><span class="code-pill">${subject.code}</span></td>
+        <td class="subject-name-cell">${subject.name}</td>
+        <td style="text-align:center;"><span class="credits-badge">${subject.credits} cr</span></td>
+        <td style="text-align:center;">
+            <div class="action-btns">
+                <button class="icon-btn edit-btn" title="Edit"
+                    onclick="openEditModal('${subject.code}','${subject.name.replace(/'/g,"\\'")}',${subject.credits})">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="icon-btn delete-btn" title="Delete"
+                    onclick="deleteSubject('${subject.code}','${subject.name.replace(/'/g,"\\'")}')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </td>`;
+    tbody.appendChild(tr);
+}
+
+function updateSubjectRow(subject) {
+    const row = document.getElementById('row-' + subject.code);
+    if (!row) return;
+    row.querySelector('.subject-name-cell').textContent = subject.name;
+    row.querySelector('.credits-badge').textContent = subject.credits + ' cr';
+    // Update edit button onclick
+    row.querySelector('.edit-btn').setAttribute('onclick',
+        `openEditModal('${subject.code}','${subject.name.replace(/'/g,"\\'")}',${subject.credits})`);
+}
+
+function updateSubjectDropdown(action, subject) {
+    const sel = document.getElementById('subject-select');
+    if (!sel) return;
+    if (action === 'add') {
+        const opt = document.createElement('option');
+        opt.value = subject.code;
+        opt.textContent = `${subject.code} — ${subject.name}`;
+        sel.appendChild(opt);
+    } else if (action === 'update') {
+        const opt = sel.querySelector(`option[value="${subject.code}"]`);
+        if (opt) opt.textContent = `${subject.code} — ${subject.name}`;
+    } else if (action === 'delete') {
+        const opt = sel.querySelector(`option[value="${subject.code}"]`);
+        if (opt) opt.remove();
+    }
+}
+
+// ─── Toast notification ───────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+    let toast = document.getElementById('pg-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'pg-toast';
+        document.body.appendChild(toast);
+    }
+    toast.className = 'pg-toast pg-toast-' + type;
+    toast.innerHTML = `<i class="fa-solid ${type==='success'?'fa-circle-check':'fa-circle-exclamation'}"></i> ${msg}`;
+    toast.style.opacity = '1';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>{ toast.style.opacity='0'; }, 3200);
+}
+
+// Close modals on outside click
+document.addEventListener('click', e => {
+    ['addModal','editModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && e.target === m) closeModal(id);
+    });
+});
+</script>
+
+<style>
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.sem-section { margin-bottom: 1.6rem; }
+.sem-label { font-weight: 700; font-size: 1.3rem; color: #5a6a85; margin-bottom: 1rem; }
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.8rem 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.stat-value {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #667eea;
+    line-height: 1;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.4rem 1.2rem;
+    border-radius: 20px;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+.status-active   { background: #d4edda; color: #155724; }
+.status-past     { background: #cce5ff; color: #004085; }
+.status-upcoming  { background: #fff3cd; color: #856404; }
+.status-completed { background: #cce5ff; color: #004085; }
+
+/* ── Panel ───────────────────────────────────────────────────────────────── */
+.panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 1.6rem;
+    overflow: hidden;
+}
+
+.table-panel { overflow: visible; }
+
+/* ── Tab Navigation ──────────────────────────────────────────────────────── */
+.tab-nav {
+    display: flex;
+    border-bottom: 2px solid #f0f2f5;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 1.3rem 1rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #8a9bb5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn i { font-size: 1.2rem; }
+
+.tab-btn:hover { color: #667eea; }
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: #f7f8ff;
+}
+
+.tab-badge {
+    background: #667eea;
+    color: white;
+    border-radius: 12px;
+    padding: 0.1rem 0.6rem;
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 22px;
+    text-align: center;
+}
+.tab-btn.active .tab-badge { background: white; color: #667eea; }
+
+/* ── Filter Bar ──────────────────────────────────────────────────────────── */
+.filter-bar {
+    padding: 1.4rem 2rem;
+    background: #fafbff;
+    border-top: 1px solid #f0f2f5;
+}
+
+.filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.8rem;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-item label {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #5a6a85;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+.filter-item label i { color: #667eea; }
+
+.filter-item select {
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #dce2ef;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    color: #2c3e50;
+    background: white;
+    cursor: pointer;
+    min-width: 200px;
+    transition: border-color 0.2s;
+}
+.filter-item select:hover,
+.filter-item select:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+
+.filter-item-action { justify-content: flex-end; margin-left: auto; }
+
+/* ── Subjects Panel ──────────────────────────────────────────────────────── */
+.subjects-panel { padding: 0; }
+
+.subjects-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f0f2f5;
+}
+.subjects-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+.subjects-header-left i { color: #667eea; font-size: 1.5rem; }
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.table-container { overflow-x: auto; }
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table thead { background: #f7f8ff; }
+.data-table th {
+    padding: 1.2rem 1.5rem;
+    text-align: left;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #8a9bb5;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 2px solid #edf0f7;
+    white-space: nowrap;
+}
+.data-table td {
+    padding: 1.2rem 1.5rem;
+    font-size: 1.35rem;
+    color: #2c3e50;
+    border-bottom: 1px solid #edf0f7;
+    vertical-align: middle;
+}
+.data-table tbody tr:hover { background: #f9faff; }
+.arrear-row { background: #fff5f5 !important; }
+
+.code-pill {
+    display: inline-block;
+    background: #eff1ff;
+    color: #667eea;
+    border-radius: 6px;
+    padding: 0.3rem 0.8rem;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+
+.credits-badge {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 20px;
+    padding: 0.3rem 0.9rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.grade-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1.2rem;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.grade-badge.fail { background: #ffcdd2; color: #c62828; }
+
+.arrear-count { font-weight: 700; font-size: 1.3rem; color: #2c3e50; }
+.arrear-count.has-arrears { color: #c62828; }
+
+.action-btns { display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+
+.icon-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+.edit-btn   { background: #eff1ff; color: #667eea; }
+.delete-btn { background: #fff0f0; color: #e74c3c; }
+.edit-btn:hover   { background: #667eea; color: white; }
+.delete-btn:hover { background: #e74c3c; color: white; }
+
+/* ── No Data ─────────────────────────────────────────────────────────────── */
+.no-data {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #8a9bb5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+.no-data i { font-size: 3.5rem; color: #c8d0e0; }
+.no-data p { font-size: 1.4rem; margin: 0; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.6rem;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.btn:hover { transform: translateY(-1px); }
+
+.btn-primary   { background: #667eea; color: white; }
+.btn-primary:hover  { background: #5568d3; }
+
+.btn-secondary { background: #95a5a6; color: white; }
+.btn-secondary:hover { background: #7f8c8d; }
+
+.btn-outline-primary {
+    background: white;
+    color: #667eea;
+    border: 1.5px solid #667eea;
+}
+.btn-outline-primary:hover { background: #667eea; color: white; }
+
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+.nav-row { margin-top: 0.5rem; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(15,20,40,0.45);
+    backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+}
+.modal.active { display: flex; animation: fadeIn 0.25s; }
+
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.modal-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.25s;
+}
+@keyframes slideUp { from { transform: translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+.modal-hdr {
+    padding: 1.8rem 2rem 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0f2f5;
+}
+.modal-hdr-left { display: flex; align-items: center; gap: 0.8rem; }
+.modal-hdr-left i { font-size: 1.8rem; color: #667eea; }
+.modal-hdr-left h3 { margin: 0; font-size: 1.7rem; color: #2c3e50; }
+
+.close-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f2f5;
+    color: #5a6a85;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.close-btn:hover { background: #e0e4ee; color: #2c3e50; }
+
+.modal-bdy { padding: 1.8rem 2rem; overflow-y: auto; flex: 1; }
+
+.context-info {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    background: #f7f8ff;
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.8rem;
+    font-size: 1.2rem;
+    color: #5a6a85;
+    font-weight: 600;
+}
+.context-info span { display: flex; align-items: center; gap: 0.4rem; }
+.context-info i { color: #667eea; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+.form-field { display: flex; flex-direction: column; gap: 0.5rem; }
+.form-field.full-width { grid-column: 1 / -1; }
+
+.form-field label {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+.req { color: #e74c3c; }
+.hint { font-size: 1.1rem; color: #8a9bb5; }
+
+.form-field input {
+    padding: 0.85rem 1rem;
+    border: 1.5px solid #dce2ef;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    color: #2c3e50;
+    transition: border-color 0.2s;
+}
+.form-field input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+.readonly-input { background: #f5f7fb; cursor: not-allowed; color: #8a9bb5; }
+
+.modal-ftr {
+    padding: 1.4rem 2rem;
+    border-top: 1px solid #f0f2f5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* ── Alert ───────────────────────────────────────────────────────────────── */
+.alert {
+    padding: 1rem 1.4rem;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    margin-bottom: 1.4rem;
+}
+.alert-error   { background: #ffebee; color: #c62828; border-left: 4px solid #e74c3c; }
+.alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #27ae60; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.pg-toast {
+    position: fixed;
+    bottom: 2.5rem;
+    right: 2.5rem;
+    padding: 1.2rem 2rem;
+    border-radius: 10px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transition: opacity 0.5s;
+}
+.pg-toast-success { background: #2ecc71; color: white; }
+.pg-toast-error   { background: #e74c3c; color: white; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .filter-row { flex-direction: column; gap: 1rem; }
+    .filter-item select { min-width: 100%; }
+    .filter-item-action { margin-left: 0; }
+    .tab-btn { font-size: 1.1rem; padding: 1rem 0.6rem; }
+    .tab-btn span:not(.tab-badge) { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+}
+
+/* Ensure content is not hidden behind fixed chat bar */
+body {
+    padding-bottom: 130px;
+}
+
+/* ── Inline marks editing ───────────────────────────────────────────────── */
+
+.num-col { width: 70px; text-align: center !important; }
+.act-col { width: 90px; text-align: center !important; }
+.cell-input {
+    width: 5rem; border: 1px solid #dde1f0; background: #fff;
+    text-align: center; font-size: .85rem; color: inherit;
+    padding: 3px 6px; border-radius: 6px; transition: border-color .15s;
+}
+.cell-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 2px #667eea33; }
+.grade-input { width: 3.5rem; text-transform: uppercase; }
+
+.edit-expand-row td { padding: 0 !important; }
+.edit-expand-cell {
+    background: #f5f7ff;
+    border-top: 2px solid #667eea44;
+    border-bottom: 2px solid #667eea44;
+    padding: 0.75rem 1.25rem !important;
+}
+.edit-fields { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.edit-field-group {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.edit-field-group label {
+    font-size: .75rem; font-weight: 600; color: #667eea; text-transform: uppercase;
+    white-space: nowrap;
+}
+.edit-actions { display: flex; gap: 0.5rem; margin-left: auto; }
+.mutation-chat { background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 4px 8px 8px 8px; }
+.mutation-chat.error { background: #fff4f4; border-color: #e74c3c; }
+.mutation-detail { font-size: .78rem; color: #555; margin-top: 0.3rem; white-space: pre-wrap; }
+
+/* ── Chat bar ────────────────────────────────────────────────────────────── */
+
+#chatPanel {
+    position: fixed;
+    bottom: 0;
+    left: 250px;           /* align with sidebar width */
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #dce2ef;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Compact one-line header */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.55rem 1.4rem;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    flex-shrink: 0;
+}
+.chat-header-icon {
+    width: 26px; height: 26px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; color: white; flex-shrink: 0;
+}
+.chat-header-title {
+    font-size: 1.25rem; font-weight: 700; color: white; white-space: nowrap;
+}
+.chat-header-sep {
+    width: 1px; height: 16px; background: rgba(255,255,255,0.3); flex-shrink: 0;
+}
+.ctx-chip {
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 0.15rem 0.7rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 0.35rem;
+    white-space: nowrap;
+}
+.chat-header-hint {
+    margin-left: auto;
+    font-size: 1rem;
+    color: rgba(255,255,255,0.65);
+    white-space: nowrap;
+}
+
+/* Messages (hidden until there are messages) */
+#chatMessages {
+    display: none;
+    flex-direction: column;
+    gap: 0.7rem;
+    overflow-y: auto;
+    max-height: 220px;
+    padding: 0.8rem 1.4rem;
+    scroll-behavior: smooth;
+    border-bottom: 1px solid #f0f2f5;
+}
+#chatMessages.has-messages { display: flex; }
+
+@keyframes msgIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+.chat-msg { display: flex; gap: 0.7rem; animation: msgIn 0.18s ease; }
+.chat-msg.user { flex-direction: row-reverse; }
+
+.chat-avatar {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}
+.chat-msg.ai   .chat-avatar { background: #eff1ff; color: #667eea; }
+.chat-msg.user .chat-avatar { background: #667eea; color: white; }
+
+.chat-bubble {
+    max-width: 72%;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+    font-size: 1.25rem;
+    line-height: 1.5;
+}
+.chat-msg.ai   .chat-bubble { background: #f5f6ff; color: #2c3e50; border-radius: 3px 12px 12px 12px; }
+.chat-msg.user .chat-bubble { background: #667eea; color: white; border-radius: 12px 3px 12px 12px; }
+
+/* Table inside bubble */
+.chat-bubble .resp-table-wrap { overflow-x: auto; margin-top: 0.6rem; border-radius: 6px; }
+.chat-bubble table { border-collapse: collapse; font-size: 1.15rem; width: 100%; min-width: 260px; }
+.chat-bubble table th { background: #667eea; color: white; padding: 0.55rem 0.8rem; text-align: left; font-weight: 600; white-space: nowrap; }
+.chat-bubble table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #edf0f7; color: #2c3e50; }
+.chat-bubble table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.chat-bubble table td.pos-cell { color: #27ae60; font-weight: 700; }
+.chat-bubble table td.neg-cell { color: #e74c3c; font-weight: 700; }
+.chat-bubble table tbody tr:hover { background: #f5f6ff; }
+.chat-bubble .resp-title { font-weight: 700; font-size: 1.25rem; color: #2c3e50; margin-bottom: 0.4rem; }
+.chat-bubble .resp-para  { line-height: 1.7; font-size: 1.15rem; }
+.chat-bubble .resp-list  { margin: 0.4rem 0 0 1.2rem; padding: 0; font-size: 1.15rem; line-height: 1.9; }
+.chat-bubble .csv-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    margin-bottom: 0.5rem; padding: 0.3rem 0.75rem;
+    background: #f0f2ff; color: #667eea; border: 1.5px solid #c5caff;
+    border-radius: 6px; font-size: 1.05rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
+}
+.chat-bubble .csv-btn:hover { background: #e5e8ff; }
+
+/* Chart inside chat bubble */
+.chat-bubble .chart-container {
+    margin-top: 0.6rem;
+    background: #fafbff;
+    border-radius: 8px;
+    padding: 0.8rem;
+    border: 1px solid #edf0f7;
+}
+
+/* Status badge for end semester results */
+.status-badge.pass { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
+.status-badge.fail { background: #ffcdd2; color: #c62828; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
+
+.chat-bubble .import-summary { font-size: 1.2rem; line-height: 1.6; }
+.chat-bubble .import-summary .tag {
+    display: inline-block; border-radius: 4px; padding: 0.1rem 0.45rem;
+    font-weight: 700; font-size: 1rem; margin: 0 0.15rem;
+}
+.chat-bubble .import-summary .tag.new  { background: #d4edda; color: #155724; }
+.chat-bubble .import-summary .tag.ok   { background: #cce5ff; color: #004085; }
+.chat-bubble .import-summary .tag.skip { background: #fff3cd; color: #856404; }
+
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 0.2rem 0; }
+.typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: #c0c8e0; animation: blink 1.2s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.3;} 40%{opacity:1;} }
+
+/* Input row */
+.chat-input-area {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 1.4rem;
+    flex-shrink: 0;
+}
+
+.file-preview-inline {
+    display: none;
+    align-items: center;
+    gap: 0.45rem;
+    background: #eff1ff;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 1.1rem;
+    color: #667eea;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+.file-preview-inline .remove-file {
+    background: none; border: none; cursor: pointer;
+    color: #e74c3c; font-size: 1.2rem; padding: 0; line-height: 1; flex-shrink: 0;
+}
+
+#chatTextInput {
+    flex: 1;
+    border: 1.5px solid #dce2ef;
+    border-radius: 22px;
+    padding: 0.6rem 1.1rem;
+    font-size: 1.25rem;
+    resize: none;
+    max-height: 100px;
+    overflow-y: auto;
+    font-family: inherit;
+    line-height: 1.45;
+    background: #f9faff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+#chatTextInput:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+.chat-action-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; transition: all 0.18s; flex-shrink: 0;
+}
+#chatAttachBtn { background: #f0f2f5; color: #667eea; }
+#chatAttachBtn:hover { background: #eff1ff; }
+#chatSendBtn { background: #667eea; color: white; }
+#chatSendBtn:hover { background: #5568d3; transform: scale(1.06); }
+#chatSendBtn:disabled { background: #c0c8e0; cursor: not-allowed; transform: none; }
+.input-hint { font-size: 0; /* hidden — keyboard shortcut in placeholder is enough */ }
+</style>
+
+
+<!-- ═══════════════ ANALYTICS CHAT BAR ═══════════════ -->
+
+<div id="chatPanel">
+
+    <!-- Compact header -->
+    <div class="chat-header">
+        <div class="chat-header-icon"><i class="fa-solid fa-brain"></i></div>
+        <span class="chat-header-title">AI Analyst</span>
+        <div class="chat-header-sep"></div>
+        <span class="ctx-chip"><i class="fa-solid fa-building"></i> {{ department.name }}</span>
+        <span class="ctx-chip"><i class="fa-solid fa-calendar"></i> {{ batch_year }}</span>
+        <span class="ctx-chip"><i class="fa-solid fa-layer-group"></i> {{ semester.name }}</span>
+        <span class="chat-header-hint">Ask anything — stats, comparisons, rankings, grades, trends&hellip;</span>
+    </div>
+
+    <!-- Messages (shown only once conversation starts) -->
+    <div id="chatMessages"></div>
+
+    <!-- Input row -->
+    <div class="chat-input-area">
+        <input type="file" id="chatFileInput" accept=".pdf,.csv" style="display:none;" onchange="handleFileSelect(event)">
+
+        <button class="chat-action-btn" id="chatAttachBtn"
+                onclick="document.getElementById('chatFileInput').click()" title="Attach PDF or CSV mark sheet">
+            <i class="fa-solid fa-paperclip"></i>
+        </button>
+
+        <div class="file-preview-inline" id="filePreview">
+            <i class="fa-solid fa-file-pdf" id="filePreviewIcon"></i>
+            <span id="filePreviewName"></span>
+            <button class="remove-file" onclick="removeFile()" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Internal # override — visible only when a PDF or CSV is attached -->
+        <div id="internalOverrideWidget" style="display:none; align-items:center; gap:0.4rem; flex-shrink:0;">
+            <label for="internalOverrideSelect" style="font-size:1.1rem; font-weight:600; color:#5a6a85; white-space:nowrap;">Internal&nbsp;#</label>
+            <select id="internalOverrideSelect" title="Which internal exam does this PDF belong to?" style="padding:0.3rem 0.6rem; border:1.5px solid #dce2ef; border-radius:6px; font-size:1.15rem; color:#2c3e50; background:#fff; cursor:pointer;">
+                <option value="auto">Auto-detect</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+
+        <textarea id="chatTextInput" rows="1"
+                  placeholder="Ask anything: stats, top students, grade distribution, trends, at-risk… (Enter to send)"
+                  onkeydown="handleEnter(event)"
+                  oninput="autoResize(this)"></textarea>
+
+        <button class="chat-action-btn" id="chatSendBtn" onclick="sendChat()" title="Send">
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+    </div>
+
+    <p class="input-hint"></p>
+</div>
+
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const CHAT_API    = "{% url 'students:analytics_chat' %}";
+const DEPT_ID     = "{{ department.id }}";
+const BATCH_YEAR  = "{{ batch_year }}";
+const SEM_NUM     = "{{ semester.number }}";
+const CSRF        = () => document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+
+let attachedFile  = null;
+
+// ─── Inline marks editing ─────────────────────────────────────────────────────
+const MARKS_UPDATE_TMPL = "{% url 'students:marks_update' '00000000-0000-0000-0000-000000000000' %}";
+const MARKS_DELETE_TMPL = "{% url 'students:marks_delete' '00000000-0000-0000-0000-000000000000' %}";
+const END_SEM_UPDATE_TMPL = "{% url 'students:end_sem_update' '00000000-0000-0000-0000-000000000000' %}";
+const END_SEM_DELETE_TMPL = "{% url 'students:end_sem_delete' '00000000-0000-0000-0000-000000000000' %}";
+const ACTIVE_TAB = "{{ active_tab }}";
+
+function toggleEditRow(id) {
+    const row = document.getElementById('edit-row-' + id);
+    if (!row) return;
+    const isOpen = row.style.display !== 'none';
+    row.style.display = isOpen ? 'none' : 'table-row';
+    const editBtn = document.querySelector(`#marks-row-${id} .edit-btn`);
+    if (editBtn) editBtn.classList.toggle('active', !isOpen);
+    if (!isOpen) row.querySelector('.cell-input')?.focus();
+}
+
+async function saveEditRow(id) {
+    let fields, url;
+    if (ACTIVE_TAB === 'end_semester') {
+        fields = ['marks','max_marks','grade','grade_points','result_status'];
+        url = END_SEM_UPDATE_TMPL.replace('00000000-0000-0000-0000-000000000000', id);
+    } else {
+        fields = ['internal1','internal2','internal3','end_sem_marks','grade','grade_points'];
+        url = MARKS_UPDATE_TMPL.replace('00000000-0000-0000-0000-000000000000', id);
+    }
+    const body = {};
+    fields.forEach(f => {
+        const inp = document.getElementById(`ef-${id}-${f}`);
+        if (inp) body[f] = inp.value.trim();
+    });
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF() },
+            body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Save failed: ' + (data.error || 'unknown error'));
+        }
+    } catch (e) { alert('Network error: ' + e); }
+}
+
+async function inlineDeleteRow(id) {
+    if (!confirm('Delete this record permanently?')) return;
+    const url = (ACTIVE_TAB === 'end_semester'
+        ? END_SEM_DELETE_TMPL
+        : MARKS_DELETE_TMPL
+    ).replace('00000000-0000-0000-0000-000000000000', id);
+    try {
+        const resp = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+        const data = await resp.json();
+        if (data.success) {
+            document.getElementById('marks-row-' + id)?.remove();
+            document.getElementById('edit-row-' + id)?.remove();
+        } else {
+            alert('Delete failed: ' + (data.error || 'unknown'));
+        }
+    } catch (e) { alert('Network error: ' + e); }
+}
+
+// Focus input on page load
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('chatTextInput').focus();
+});
+
+// ─── File handling ────────────────────────────────────────────────────────────
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    const isPdf = name.endsWith('.pdf');
+    const isCsv = name.endsWith('.csv');
+    if (!isPdf && !isCsv) {
+        appendMsg('ai', '<span style="color:#e74c3c;">⚠️ Only PDF and CSV files are supported.</span>');
+        return;
+    }
+    attachedFile = file;
+    document.getElementById('filePreviewName').textContent = file.name;
+    // Show the appropriate file-type icon
+    const iconEl = document.getElementById('filePreviewIcon');
+    if (iconEl) {
+        iconEl.className = isCsv
+            ? 'fa-solid fa-file-csv'
+            : 'fa-solid fa-file-pdf';
+    }
+    document.getElementById('filePreview').style.display = 'flex';
+    document.getElementById('chatAttachBtn').style.opacity = '0.5';
+    // Show the override selector
+    document.getElementById('internalOverrideWidget').style.display = 'flex';
+    document.getElementById('internalOverrideSelect').value = 'auto';
+}
+
+function removeFile() {
+    attachedFile = null;
+    document.getElementById('internalOverrideWidget').style.display = 'none';
+    document.getElementById('internalOverrideSelect').value = 'auto';
+    document.getElementById('chatFileInput').value = '';
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('chatAttachBtn').style.opacity = '1';
+}
+
+// ─── Chat history (kept in memory for the session) ────────────────────────────
+// Each entry: { role: 'user'|'assistant', content: '...' }
+const chatHistory = [];
+const MAX_HISTORY = 20;  // keep last 20 exchanges (10 pairs)
+
+function pushHistory(role, content) {
+    chatHistory.push({ role, content });
+    // trim oldest if over limit
+    while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
+}
+
+// Summarise an AI response into a short text string for history context
+function summariseResponse(data) {
+    if (!data) return '';
+    if (data.error) return 'Error: ' + data.error;
+    if (data.type === 'pdf_import') return data.success ? 'PDF imported successfully.' : 'PDF import failed.';
+    if (data.type === 'mutation') return data.success ? (data.affected + ' record(s) ' + (data.action||'updated') + '.') : 'Mutation failed.';
+    // NLPQ
+    if (data.format === 'paragraph') return data.text || '';
+    if (data.format === 'table') {
+        let s = (data.title || 'Table') + ' — ' + (data.columns||[]).join(', ');
+        const rc = (data.rows||[]).length;
+        s += ' (' + rc + ' row' + (rc !== 1 ? 's' : '') + ')';
+        // Include first 3 rows as context
+        (data.rows||[]).slice(0, 3).forEach(r => { s += '\n  ' + r.join(' | '); });
+        if (rc > 3) s += '\n  ... and ' + (rc - 3) + ' more rows';
+        return s;
+    }
+    if (data.format === 'chart') {
+        return (data.title || 'Chart') + ' — ' + (data.chart_type||'bar') + ' chart with labels: ' + (data.labels||[]).join(', ');
+    }
+    if (data.format === 'list') {
+        return (data.title || 'List') + ': ' + (data.items||[]).join(', ');
+    }
+    return JSON.stringify(data).substring(0, 200);
+}
+
+// ─── Send message ─────────────────────────────────────────────────────────────
+function handleEnter(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+async function sendChat() {
+    const text  = document.getElementById('chatTextInput').value.trim();
+    const file  = attachedFile;
+
+    if (!text && !file) return;
+
+    // Show user bubble
+    if (file && !text) {
+        const fileIcon = file.name.toLowerCase().endsWith('.csv') ? 'fa-file-csv' : 'fa-file-pdf';
+        appendMsg('user', `<i class="fa-solid ${fileIcon}"></i> ${escHtml(file.name)}`);
+    } else if (file && text) {
+        const fileIcon = file.name.toLowerCase().endsWith('.csv') ? 'fa-file-csv' : 'fa-file-pdf';
+        appendMsg('user', `<i class="fa-solid ${fileIcon}"></i> ${escHtml(file.name)}<br>${escHtml(text)}`);
+    } else {
+        appendMsg('user', escHtml(text));
+    }
+
+    // Reset input
+    document.getElementById('chatTextInput').value = '';
+    document.getElementById('chatTextInput').style.height = 'auto';
+    removeFile();
+    document.getElementById('chatSendBtn').disabled = true;
+
+    // Typing indicator
+    const typingId = appendTyping();
+
+    // Build multipart form
+    const fd = new FormData();
+    fd.append('department_id',   DEPT_ID);
+    fd.append('batch_year',      BATCH_YEAR);
+    fd.append('semester_number', SEM_NUM);
+    if (text) {
+        fd.append('message', text);
+        pushHistory('user', text);
+    }
+    if (file) {
+        fd.append('file', file);
+        const ov = document.getElementById('internalOverrideSelect')?.value || 'auto';
+        if (ov !== 'auto') fd.append('internal_override', ov);
+    }
+    // Send conversation history for context-aware responses
+    if (chatHistory.length > 1) {
+        // Send all but the current message (which is already in 'message')
+        fd.append('history', JSON.stringify(chatHistory.slice(0, -1)));
+    }
+
+    try {
+        const resp = await fetch(CHAT_API, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF() },
+            body: fd,
+        });
+        const data = await resp.json();
+        removeTyping(typingId);
+        // Save AI response to history
+        pushHistory('assistant', summariseResponse(data));
+        renderResponse(data);
+    } catch (err) {
+        removeTyping(typingId);
+        appendMsg('ai', `<span style="color:#e74c3c;">⚠️ Network error: ${escHtml(err.message)}</span>`);
+    } finally {
+        document.getElementById('chatSendBtn').disabled = false;
+        document.getElementById('chatTextInput').focus();
+    }
+}
+
+// ─── Response rendering ───────────────────────────────────────────────────────
+function renderResponse(data) {
+    if (data.error) {
+        appendMsg('ai', `<span style="color:#e74c3c;">⚠️ ${escHtml(data.error)}</span>`);
+        return;
+    }
+
+    // ── PDF import result
+    if (data.type === 'pdf_import') {
+        if (!data.success) {
+            appendMsg('ai', `<span style="color:#e74c3c;">⚠️ ${escHtml(data.error)}</span>`);
+            return;
+        }
+        const newTags = data.subjects_created.map(c=>`<span class="tag new">${escHtml(c)}</span>`).join(' ');
+        const okTags  = data.subjects_existed.map(c=>`<span class="tag ok">${escHtml(c)}</span>`).join(' ');
+        const dbg = data._debug || {};
+        const markLabel = data.mark_type === 'end_semester'
+            ? 'End Semester'
+            : `Internal ${data.internal_number || 1}`;
+
+        let skippedHtml = '';
+        if (data.rows_skipped && dbg.records_count !== undefined) {
+            const reasons = data.skip_reasons || {};
+            const parts = Object.entries(reasons).map(([k,v]) => `${v}× ${escHtml(k)}`).join(', ');
+            const llmRolls = (dbg.llm_extracted_rolls || []).map(r => `<code>${escHtml(r)}</code>`).join(' ');
+            const dbSample  = (dbg.db_sample || []).map(r => `<code>${escHtml(r)}</code>`).join(' ');
+            skippedHtml = `
+                <br>⚠️ <span class="tag skip">${data.rows_skipped} skipped</span>${parts ? ` — ${parts}` : ''}.
+                <br><small style="opacity:.75">
+                  LLM extracted ${dbg.records_count} record(s) for rolls: ${llmRolls || '(none)'}<br>
+                  DB sample (roll|regNo): ${dbSample || '(none)'}
+                </small>`;
+        }
+        let html = `<div class="import-summary">
+            ✅ <strong>Marks imported successfully!</strong>
+            <span style="float:right;opacity:.6;font-size:.8em">${escHtml(markLabel)} · ${data.pages_parsed || 1} page(s)</span>
+            <br><br>
+            ${data.subjects_created.length ? `New subjects created: ${newTags}<br>` : ''}
+            ${data.subjects_existed.length ? `Existing subjects updated: ${okTags}<br>` : ''}
+            📝 <strong>${data.rows_inserted}</strong> mark record(s) written to database.
+            ${skippedHtml}
+        </div>`;
+        appendMsg('ai', html);
+
+        // Reload subject count badge on page
+        document.getElementById('subject-count').textContent =
+            parseInt(document.getElementById('subject-count').textContent || '0')
+            + data.subjects_created.length;
+        return;
+    }
+
+    // ── NLPQ / compute result
+    if (data.type === 'nlpq') {
+        if (data.format === 'table') {
+            appendMsg('ai', renderTable(data));
+        } else if (data.format === 'chart') {
+            appendMsg('ai', renderChart(data));
+        } else if (data.format === 'list') {
+            let html = '';
+            if (data.title) html += `<div class="resp-title">${escHtml(data.title)}</div>`;
+            html += `<ul class="resp-list">${(data.items||[]).map(i=>`<li>${escHtml(String(i))}</li>`).join('')}</ul>`;
+            if (!data.items?.length) html += `<p style="color:#7f8c8d;">No items.</p>`;
+            appendMsg('ai', html);
+        } else {
+            const txt = (data.text || 'No answer available.');
+            // If text has multiple lines, render as styled paragraph
+            const formatted = escHtml(txt).replace(/\n/g, '<br>');
+            appendMsg('ai', `<div class="resp-para">${formatted}</div>`);
+        }
+        return;
+    }
+
+    // ── Mutation result
+    if (data.type === 'mutation') {
+        if (!data.success) {
+            appendMsg('ai', `<div class="mutation-chat error">⚠️ ${escHtml(data.error || 'Mutation failed.')}</div>`);
+        } else {
+            const icon   = data.action === 'delete' ? '🗑️' : '✏️';
+            const verb   = data.action === 'delete' ? 'deleted' : 'updated';
+            const detail = data.detail ? `<div class="mutation-detail">${escHtml(data.detail)}</div>` : '';
+            appendMsg('ai', `<div class="mutation-chat">
+                ${icon} <strong>${data.affected ?? '?'} record(s) ${verb}.</strong>
+                ${detail}
+            </div>`);
+            // Reload to reflect changes in the marks table
+            if (document.querySelector('[id^="marks-row-"]')) window.location.reload();
+        }
+        return;
+    }
+
+    appendMsg('ai', JSON.stringify(data));
+}
+
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
+function appendMsg(role, htmlContent) {
+    const messages = document.getElementById('chatMessages');
+    messages.classList.add('has-messages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    const icon = role === 'ai' ? 'fa-robot' : 'fa-user';
+    div.innerHTML = `
+        <div class="chat-avatar"><i class="fa-solid ${icon}"></i></div>
+        <div class="chat-bubble">${htmlContent}</div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function appendTyping() {
+    const id = 'typing-' + Date.now();
+    const messages = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg ai';
+    div.id = id;
+    div.innerHTML = `
+        <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="chat-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return id;
+}
+
+function removeTyping(id) {
+    document.getElementById(id)?.remove();
+}
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Smart table renderer ─────────────────────────────────────────────────────
+function isNumericStr(s) {
+    const t = String(s).trim();
+    // Match: integers, decimals, percentages, ranked like "1", "+3.5", "-2.0", "62.98%"
+    return /^[+\-]?\d+(\.\d+)?%?$/.test(t) && t !== '—';
+}
+
+// ─── Chart rendering ──────────────────────────────────────────────────────────
+let _chartCounter = 0;
+const CHART_COLORS = [
+    'rgba(52,152,219,0.7)',  'rgba(231,76,60,0.7)',   'rgba(46,204,113,0.7)',
+    'rgba(155,89,182,0.7)',  'rgba(241,196,15,0.7)',  'rgba(230,126,34,0.7)',
+    'rgba(26,188,156,0.7)',  'rgba(52,73,94,0.7)',    'rgba(149,165,166,0.7)',
+    'rgba(192,57,43,0.7)',
+];
+const CHART_BORDERS = CHART_COLORS.map(c => c.replace('0.7)', '1)'));
+
+function renderChart(data) {
+    _chartCounter++;
+    const canvasId = `chat-chart-${_chartCounter}`;
+    const chartType = data.chart_type || 'bar';
+    const title     = data.title || 'Chart';
+    const labels    = data.labels || [];
+    const datasets  = (data.datasets || []).map((ds, i) => ({
+        label:           ds.label || `Dataset ${i+1}`,
+        data:            ds.data || [],
+        backgroundColor: chartType === 'pie' || chartType === 'doughnut'
+            ? labels.map((_, j) => CHART_COLORS[j % CHART_COLORS.length])
+            : CHART_COLORS[i % CHART_COLORS.length],
+        borderColor:     chartType === 'pie' || chartType === 'doughnut'
+            ? labels.map((_, j) => CHART_BORDERS[j % CHART_BORDERS.length])
+            : CHART_BORDERS[i % CHART_BORDERS.length],
+        borderWidth: 1,
+    }));
+
+    let html = `<div class="resp-title">${escHtml(title)}</div>`;
+    html += `<div class="chart-container" style="max-width:600px;margin:0.5rem auto;">
+        <canvas id="${canvasId}" width="600" height="350"></canvas>
+    </div>`;
+
+    // Schedule chart creation after DOM update
+    setTimeout(() => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        new Chart(canvas, {
+            type: chartType,
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    title: { display: false },
+                    legend: { display: datasets.length > 1 || chartType === 'pie' || chartType === 'doughnut' },
+                },
+                scales: (chartType === 'pie' || chartType === 'doughnut') ? {} : {
+                    y: { beginAtZero: true },
+                },
+            },
+        });
+    }, 50);
+
+    return html;
+}
+
+function renderTable(data) {
+    const cols  = data.columns || [];
+    const rows  = data.rows    || [];
+
+    // Detect which columns are numeric (by checking first non-empty rows)
+    const numericCol = cols.map((_, ci) => {
+        const samples = rows.slice(0, Math.min(rows.length, 5))
+                            .map(r => String(r[ci] ?? '—'))
+                            .filter(v => v !== '—' && v !== '');
+        return samples.length > 0 && samples.every(isNumericStr);
+    });
+
+    let html = '';
+    if (data.title) html += `<div class="resp-title">${escHtml(data.title)}</div>`;
+
+    // CSV download button (for tables with more than 5 rows)
+    if (rows.length > 5) {
+        const csvId = 'csv-' + Date.now();
+        html += `<button class="csv-btn" onclick="downloadCSV('${csvId}')" id="btn-${csvId}">
+                   <i class="fa-solid fa-download"></i> Download CSV
+                 </button>`;
+        // Encode CSV data as data attribute on a hidden element
+        const csvRows = [cols, ...rows].map(r => r.map(c =>
+            '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+        html += `<textarea id="${csvId}" style="display:none">${csvRows}</textarea>`;
+    }
+
+    html += `<div class="resp-table-wrap"><table>
+        <thead><tr>${cols.map(c => `<th>${escHtml(c)}</th>`).join('')}</tr></thead>
+        <tbody>`;
+
+    rows.forEach(row => {
+        html += '<tr>';
+        row.forEach((cell, ci) => {
+            const val  = String(cell ?? '—');
+            const num  = numericCol[ci];
+            // Colour ±change cells (e.g. "+5.0" green, "-3.0" red)
+            let cls = num ? ' class="num-cell"' : '';
+            let display = escHtml(val);
+            if (num && val.startsWith('+')) {
+                cls = ' class="num-cell pos-cell"';
+            } else if (num && val.startsWith('-') && val !== '—') {
+                cls = ' class="num-cell neg-cell"';
+            }
+            html += `<td${cls}>${display}</td>`;
+        });
+        html += '</tr>';
+    });
+
+    html += `</tbody></table></div>`;
+    if (!rows.length) html += `<p style="margin-top:0.8rem;color:#7f8c8d;">No data found.</p>`;
+    return html;
+}
+
+function downloadCSV(id) {
+    const csv  = document.getElementById(id)?.value || '';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = 'analytics_export.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+</script>
+
+{% endblock %}
+

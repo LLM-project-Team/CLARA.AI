@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Extracted Result{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'students:analysis_results' analysis_id=result.document.id %}">
+                    {{ result.document.original_filename }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Verify Result</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Verify Extracted Data</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Result Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Student Information -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Student Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Roll Number</label>
+                                    <p class="form-control-plaintext">
+                                        {% if result.student %}
+                                        <a href="{% url 'students:student_detail' student_id=result.student.id %}" target="_blank">
+                                            {{ result.student.roll_number }}
+                                        </a>
+                                        {% else %}
+                                        <em class="text-muted">Not matched</em>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Student Name</label>
+                                    <p class="form-control-plaintext">
+                                        {% if result.student %}
+                                        {{ result.student.student_name }}
+                                        {% else %}
+                                        <em class="text-muted">Not matched</em>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subject Information -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Subject Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Subject Code</label>
+                                    <p class="form-control-plaintext">
+                                        {% if result.subject %}
+                                        {{ result.subject.code }}
+                                        {% else %}
+                                        <em class="text-muted">Not matched</em>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Subject Name</label>
+                                    <p class="form-control-plaintext">
+                                        {% if result.subject %}
+                                        {{ result.subject.name }}
+                                        {% else %}
+                                        <em class="text-muted">Not matched</em>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Marks Information -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Marks & Grades</h6>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Internal 1</label>
+                                    <input type="number" class="form-control" step="0.01" 
+                                           value="{{ result.internal1|default:'' }}" disabled>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Internal 2</label>
+                                    <input type="number" class="form-control" step="0.01" 
+                                           value="{{ result.internal2|default:'' }}" disabled>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Internal 3</label>
+                                    <input type="number" class="form-control" step="0.01" 
+                                           value="{{ result.internal3|default:'' }}" disabled>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">End Semester</label>
+                                    <input type="number" class="form-control" step="0.01" 
+                                           value="{{ result.end_sem_marks|default:'' }}" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confidence & Verification -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Verification</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Extraction Confidence</label>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ result.confidence_score }}%">
+                                            {{ result.confidence_score }}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Verification Status</label>
+                                    <p class="form-control-plaintext">
+                                        {% if result.is_verified %}
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Verified</span>
+                                        {% else %}
+                                        <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Pending</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Source Context -->
+                        {% if result.source_text %}
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Source Text (from PDF)</h6>
+                            <div class="alert alert-light" style="max-height: 200px; overflow-y: auto;">
+                                <small>{{ result.source_text|linebreaks }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Verification Decision -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Verification Decision</h6>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_verified" 
+                                       name="is_verified" {% if result.is_verified %}checked{% endif %}>
+                                <label class="form-check-label" for="is_verified">
+                                    <strong>Mark as Verified</strong> - Data is correct and should be saved to database
+                                </label>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Verification Notes</label>
+                                <textarea class="form-control" name="verification_notes" rows="3" 
+                                          placeholder="Add any notes about this verification...">{{ result.verification_notes }}</textarea>
+                                <small class="text-muted">e.g., Corrected marks, student not found, etc.</small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'students:analysis_results' analysis_id=result.document.id %}" 
+                               class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Confirm Verification
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Document Info</h6>
+                </div>
+                <div class="card-body small">
+                    <p><strong>File:</strong> {{ result.document.original_filename }}</p>
+                    <p><strong>Type:</strong> {{ result.document.get_document_type_display }}</p>
+                    <p><strong>Uploaded:</strong> {{ result.document.upload_date|date:"M d, Y" }}</p>
+                    <p class="mb-0"><strong>Page:</strong> {{ result.page_number|default:"-" }}</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'students:student_detail' student_id=result.student.id %}" 
+                       class="btn btn-sm btn-outline-primary w-100 mb-2" target="_blank">
+                        <i class="bi bi-person"></i> View Student Profile
+                    </a>
+                    <a href="{% url 'students:analysis_results' analysis_id=result.document.id %}" 
+                       class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> Back to Results
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

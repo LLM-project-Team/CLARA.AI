@@ -22,7 +22,7 @@ def user_management(request):
         })
     
     # Get all users from cloud DB
-    users = UserProfile.objects.all().order_by('role', 'name')
+    users = UserProfile.objects.all().order_by('role', 'full_name')
     departments = Department.objects.filter(is_active=True)
     
     context = {
@@ -73,7 +73,7 @@ def add_user(request):
             new_id = uuid.uuid4()
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO users (id, institution_id, department_id, name, email, password_hash, role, is_active)
+                    INSERT INTO users (id, institution_id, department_id, full_name, email, password_hash, role, is_active)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)
                 """, [str(new_id), institution_id, department_id, name, email, password_hash, role])
             
@@ -132,7 +132,7 @@ def edit_user(request, user_id):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE users 
-                    SET name = %s, email = %s, role = %s, department_id = %s, is_active = %s
+                    SET full_name = %s, email = %s, role = %s, department_id = %s, is_active = %s
                     WHERE id = %s
                 """, [name, email, role, department_id, is_active, str(user_id)])
             
@@ -307,16 +307,13 @@ def add_department(request):
             return redirect('users:department_management')
         
         try:
-            # Get institution_id from user's profile
-            institution_id = user_profile.institution_id
-            
             # Insert into cloud DB
             with connection.cursor() as cursor:
                 dept_id = uuid.uuid4()
                 cursor.execute("""
-                    INSERT INTO departments (id, institution_id, name, full_name, is_active, created_at)
-                    VALUES (%s, %s, %s, %s, %s, NOW())
-                """, [str(dept_id), str(institution_id), name, full_name, True])
+                    INSERT INTO departments (id, name, full_name, is_active, created_at)
+                    VALUES (%s, %s, %s, %s, NOW())
+                """, [str(dept_id), name, full_name, True])
             
             messages.success(request, f'Department "{name}" added successfully!')
         except Exception as e:

@@ -204,15 +204,6 @@
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    <label>Salutation</label>
-                    <select name="salutation">
-                        <option value="">Select</option>
-                        <option value="Mr.">Mr.</option>
-                        <option value="Ms.">Ms.</option>
-                        <option value="Mrs.">Mrs.</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label>Student Name <span class="required">*</span></label>
                     <input type="text" name="student_name" required placeholder="Full name">
                 </div>
@@ -277,28 +268,20 @@
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Batch Year</label>
-                    <input type="text" name="batch_year" value="{{ batch_year|default:'' }}" placeholder="e.g., 2024-28">
-                </div>
-                <div class="form-group">
-                    <label>Academic Year Join</label>
-                    <input type="text" name="academic_year_join" placeholder="e.g., 2024-25">
+                    <label>Academic Year (Joining)</label>
+                    <input type="text" name="academic_year_joining" value="{{ batch_year|default:'' }}" placeholder="e.g., 2024-28">
                 </div>
                 <div class="form-group">
                     <label>Date of Admission</label>
                     <input type="date" name="date_of_admission">
                 </div>
                 <div class="form-group">
-                    <label>Course Type</label>
-                    <select name="course_type">
-                        <option value="">Select</option>
-                        <option value="UG">Undergraduate (UG)</option>
-                        <option value="PG">Postgraduate (PG)</option>
-                    </select>
+                    <label>Branch / Specialization</label>
+                    <input type="text" name="branch_specialization" placeholder="e.g., AI&DS">
                 </div>
                 <div class="form-group">
-                    <label>Admission Quota</label>
-                    <input type="text" name="admission_quota" placeholder="MQ/GQ">
+                    <label>Admission Quota (MQ/GQ)</label>
+                    <input type="text" name="mq_gq" placeholder="MQ/GQ">
                 </div>
                 <div class="form-group checkbox-group">
                     <input type="checkbox" name="hosteller" id="hosteller">

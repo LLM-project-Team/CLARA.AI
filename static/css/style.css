@@ -244,6 +244,125 @@ body {
     border-left: 5px solid #2ecc71; /* Green active line */
 }
 
+.insight-generate-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    color: #2c3e50;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    min-width: 180px;
+    min-height: 50px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    cursor: pointer;
+    box-shadow:
+        0 8px 32px rgba(44, 62, 80, 0.12),
+        0 2px 8px rgba(44, 62, 80, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.insight-generate-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg,
+        rgba(241, 196, 15, 0.1) 0%,
+        rgba(52, 152, 219, 0.05) 50%,
+        rgba(44, 62, 80, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 14px;
+}
+
+.insight-generate-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle,
+        rgba(241, 196, 15, 0.15) 0%,
+        transparent 70%);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    transform: scale(0.8);
+}
+
+.insight-generate-btn:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+        0 20px 60px rgba(44, 62, 80, 0.15),
+        0 8px 24px rgba(44, 62, 80, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border-color: rgba(241, 196, 15, 0.3);
+}
+
+.insight-generate-btn:hover::before {
+    opacity: 1;
+}
+
+.insight-generate-btn:hover::after {
+    opacity: 1;
+}
+
+.insight-generate-btn:active {
+    transform: translateY(-2px) scale(0.98);
+    box-shadow:
+        0 12px 40px rgba(44, 62, 80, 0.2),
+        0 4px 16px rgba(44, 62, 80, 0.15),
+        inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.insight-generate-btn i {
+    font-size: 1.4rem;
+    color: #f1c40f;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 4px rgba(241, 196, 15, 0.3));
+}
+
+.insight-generate-btn:hover i {
+    color: #e67e22;
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(241, 196, 15, 0.5));
+}
+
+.insight-generate-btn span {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2c3e50;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.insight-generate-btn:hover span {
+    color: #34495e;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.insight-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
 .status-dot {
     height: 12px;
     width: 12px;
@@ -252,11 +371,64 @@ body {
     box-shadow: 0 0 10px #2ecc71;
 }
 
+.insight-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-left: 1rem;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+}
+
+.insight-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(241, 196, 15, 0.4);
+}
+
 /* --- Features Grid (Cards) --- */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2.5rem;
+}
+
+/* Responsive design for system insight */
+@media (max-width: 768px) {
+    .ai-status {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .insight-generate-btn {
+        align-self: center;
+        min-width: 160px;
+        min-height: 45px;
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .insight-generate-btn i {
+        font-size: 1.2rem;
+    }
+
+    .insight-generate-btn span {
+        font-size: 0.9rem;
+    }
+
+    .insight-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
 }
 
 .feature-card {

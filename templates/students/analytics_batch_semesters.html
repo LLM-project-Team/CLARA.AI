@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Analytics - {{ department.name }} Batch {{ batch_year }}{% endblock %}
+{% block page_subtitle %}Select a semester to view detailed analytics{% endblock %}
+
+{% block content %}
+
+<div class="analytics-section">
+    <h3>Semesters for {{ department.name }} - Batch {{ batch_year }}</h3>
+    <p style="color: #666; margin-bottom: 2rem;">Year {{ request.GET.year|default:"selected" }} - All 8 semesters available</p>
+    <div class="semester-grid">
+        {% for sem in semesters %}
+        <div class="semester-card {% if sem.status == 'active' %}active{% elif sem.status == 'completed' or sem.status == 'past' %}completed{% else %}upcoming{% endif %}"
+             onclick="window.location.href='{% url 'students:analytics_semester_details' department.id batch_year sem.number %}'">
+            <div class="semester-header">
+                <h4>{{ sem.name }}</h4>
+                <span class="status-badge {{ sem.status }}">{{ sem.status|title }}</span>
+            </div>
+            <p>Year {{ sem.year }} - {{ sem.name }}</p>
+            <div class="card-btn">
+                View Analytics <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div style="text-align: center; padding: 3rem; background: #f5f5f5; border-radius: 8px;">
+                <h4 style="color: #666; margin-bottom: 1rem;">No Semesters Found</h4>
+                <p style="color: #999; margin-bottom: 2rem;">
+                    No semesters have been configured for this batch yet.
+                </p>
+                <p style="color: #999; font-size: 0.9rem;">
+                    Please contact your administrator to set up semesters for batch {{ batch_year }}.
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="analytics-section">
+    <a href="{% url 'students:analytics_department_batches' department.id %}" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to Batches
+    </a>
+</div>
+
+<style>
+.semester-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.semester-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    padding: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.semester-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.semester-card.active {
+    border-color: #4caf50;
+}
+
+.semester-card.past {
+    border-color: #2196f3;
+}
+
+.semester-card.completed {
+    border-color: #2196f3;
+    opacity: 0.85;
+}
+
+.semester-card.upcoming {
+    border-color: #ff9800;
+}
+
+.semester-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.semester-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+
+.status-badge.past {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.status-badge.completed {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.status-badge.upcoming {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.semester-card p {
+    color: #7f8c8d;
+    margin-bottom: 1.5rem;
+}
+
+.card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.card-btn:hover {
+    color: #5a67d8;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #7f8c8d;
+    transform: translateY(-2px);
+}
+</style>
+
+{% endblock %}

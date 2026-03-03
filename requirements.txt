@@ -1,0 +1,38 @@
+# Django Core
+Django==4.2.0
+djangorestframework==3.14.0
+django-cors-headers==4.0.0
+
+# Database
+psycopg2-binary==2.9.6
+
+# PDF Processing
+PyMuPDF==1.23.4  # For PDF text and image extraction
+pypdf==3.17.1  # Alternative PDF library
+
+# Vector Database & RAG
+chromadb==0.4.10
+sentence-transformers==2.2.2
+transformers==4.33.0
+torch==2.0.1  # For CLIP and embeddings
+
+# Image Processing
+Pillow==10.0.0
+
+# LLM & NLP
+langchain==0.0.310  # Optional: for advanced LLM integration
+openai==0.27.8  # Optional: for OpenAI API
+
+# Task Queue (Optional: for async processing)
+celery==5.3.1
+redis==5.0.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Development
+black==23.9.1
+flake8==6.1.0
+pytest==7.4.0
+pytest-django==4.5.2

@@ -69,7 +69,7 @@
     </div>
     <h1>Access Denied</h1>
     <p>{{ message|default:"You don't have permission to access this page. Please contact your administrator if you believe this is an error." }}</p>
-    <a href="{% url 'home' %}" class="back-btn">
+    <a href="{% url 'pages:home' %}" class="back-btn">
         <i class="fa-solid fa-home"></i> Back to Dashboard
     </a>
 </div>

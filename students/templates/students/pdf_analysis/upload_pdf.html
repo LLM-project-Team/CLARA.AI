@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload PDF - {{ semester }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'students:select_batch' department_id=department.id %}">{{ department.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}">{{ batch_year }}</a></li>
+            <li class="breadcrumb-item active">{{ semester.name }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Upload PDF for Analysis</h1>
+    <p class="text-muted mb-4">
+        Department: <strong>{{ department.full_name }}</strong> | 
+        Batch: <strong>{{ batch_year }}</strong> | 
+        Semester: <strong>{{ semester.name }}</strong>
+    </p>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Upload PDF Document</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="document_type" class="form-label">Document Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="document_type" name="document_type" required>
+                                <option value="">-- Select Document Type --</option>
+                                {% for value, label in document_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Select the type of document you're uploading</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pdf_file" class="form-label">PDF File <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="pdf_file" name="pdf_file" 
+                                       accept=".pdf" required onchange="updateFileName(this)">
+                                <button class="btn btn-outline-secondary" type="button">Browse</button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> Only PDF files are supported. Max size: 50MB
+                            </small>
+                        </div>
+
+                        <div id="file-preview" class="mb-3" style="display:none;">
+                            <p class="mb-2"><strong>File Selected:</strong></p>
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-file-pdf"></i> 
+                                <span id="file-name"></span> 
+                                (<span id="file-size"></span>)
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}" 
+                               class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-cloud-upload"></i> Upload & Analyze
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Tips for Best Results</h6>
+                </div>
+                <div class="card-body small">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Clear, scanned PDFs work best</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Ensure text is readable</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Supports multiple pages</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Handles tables and images</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">What Happens Next?</h6>
+                </div>
+                <div class="card-body small">
+                    <ol class="mb-0">
+                        <li>PDF is uploaded and analyzed using AI</li>
+                        <li>Marks and grades are extracted</li>
+                        <li>Results shown for verification</li>
+                        <li>Confirm and save to database</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFileName(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = formatFileSize(file.size);
+        document.getElementById('file-preview').style.display = 'block';
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Make file input clickable via button
+document.querySelector('button[type="button"]').addEventListener('click', function() {
+    document.getElementById('pdf_file').click();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Semester - {{ batch_year }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'students:select_batch' department_id=department.id %}">{{ department.name }}</a></li>
+            <li class="breadcrumb-item active">{{ batch_year }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Select Semester</h1>
+    <p class="text-muted mb-4">
+        Department: <strong>{{ department.full_name }}</strong> | 
+        Batch: <strong>{{ batch_year }}</strong>
+    </p>
+
+    <div class="row">
+        {% for semester in semesters %}
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'students:upload_pdf' department_id=department.id batch_year=batch_year semester_id=semester.id %}" 
+               class="card text-decoration-none border-success h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">{{ semester.name }}</h5>
+                    <p class="card-text text-muted small">
+                        {% if semester.status %}
+                        <span class="badge bg-info">{{ semester.get_status_display }}</span>
+                        {% endif %}
+                    </p>
+                    <p class="card-text text-muted small">
+                        {% if semester.start_date %}
+                        {{ semester.start_date|date:"M d, Y" }}
+                        {% endif %}
+                    </p>
+                    <span class="btn btn-success btn-sm">
+                        Upload PDF <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-warning" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> No semesters found for this batch.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'students:select_batch' department_id=department.id %}" class="btn btn-secondary mt-4">
+        <i class="bi bi-arrow-left"></i> Back to Batch Selection
+    </a>
+</div>
+{% endblock %}
