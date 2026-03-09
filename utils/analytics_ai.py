@@ -7,7 +7,8 @@ Handles three capabilities inside the Academic Analytics feature:
      - Uses existing PDFExtractor to read uploaded PDF
      - Detects multiple tables and their relationships
      - Sends extracted text to local Ollama (llama3.2) to produce structured JSON
-     - Auto-creates missing subjects and writes SubjectResult/EndSemesterResult rows
+     - Writes SubjectResult/EndSemesterResult rows for subjects that already exist
+     - Subjects are NEVER auto-created from documents; they must be defined manually
      - Separates internal marks from end semester results into different tables
 
   2. Natural Language Query (NLPQ)
@@ -29,11 +30,15 @@ import urllib.request
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, Optional
 
-
 # ─── Ollama (local) setup ──────────────────────────────────────────────────────
 
-OLLAMA_URL   = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:latest")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+
+# Import canonical model names from the central LLM client
+try:
+    from aa.llm_client import MAIN_MODEL as OLLAMA_MODEL
+except ImportError:
+    OLLAMA_MODEL = os.environ.get("OLLAMA_MAIN_MODEL", "llama3.1:8b")
 
 
 def _ollama_generate(prompt: str, model: str = OLLAMA_MODEL) -> str:
@@ -2698,8 +2703,8 @@ class AnalyticsAI:
         except Exception as e:
             return {"error": f"Department or semester not found: {e}"}
 
-        subjects_created = []
         subjects_existed = []
+        subjects_not_found = []  # codes present in document but not in subjects table
         rows_inserted = 0
         rows_skipped = 0
         skip_reasons: Dict[str, int] = {}
@@ -2722,34 +2727,36 @@ class AnalyticsAI:
             if reg and reg not in ('NONE', 'NULL', ''):
                 student_pool[reg] = s
 
-        # ── Look up subjects (do NOT auto-create or auto-update) ─────────────
-        # Subjects can only be managed manually via the Subjects tab.
-        # We create subjects ONLY if they are referenced in parsed data AND
-        # don't exist yet. We never overwrite existing subject names/credits.
+        # ── Look up subjects (READ-ONLY — subjects must be defined manually) ──
+        # The AI engine NEVER creates or modifies subjects from uploaded documents.
+        # Subjects must be added by the user via the Subjects tab before uploading
+        # mark sheets.  Any subject code present in the document that is not already
+        # in the subjects table is recorded in subjects_not_found; all its mark rows
+        # are skipped during import.
         subject_map: Dict[str, Subject] = {}
+
+        # Collect every subject code referenced in this document (from the
+        # subjects list AND directly from individual records).
+        _doc_codes: list = []
         for s in parsed.get("subjects", []):
             code = str(s.get("code", "")).strip().upper()
-            name = str(s.get("name", code)).strip()
-            credits_raw = s.get("credits", 3)
-            try:
-                credits = int(credits_raw) if credits_raw else 3
-            except (ValueError, TypeError):
-                credits = 3
-            if not code:
-                continue
-            obj, created = Subject.objects.get_or_create(
-                code=code,
-                department=department,
-                semester=semester,
-                defaults={"name": name, "credits": credits},
-            )
-            if created:
-                subjects_created.append(code)
-            else:
+            if code:
+                _doc_codes.append(code)
+        for rec in parsed.get("records", []):
+            code = str(rec.get("subject_code", "")).strip().upper()
+            if code and code not in _doc_codes:
+                _doc_codes.append(code)
+
+        # Deduplicate while preserving order, then look each one up.
+        for code in dict.fromkeys(_doc_codes):
+            obj = Subject.objects.filter(
+                code=code, department=department, semester=semester
+            ).first()
+            if obj:
                 subjects_existed.append(code)
-                # Do NOT overwrite existing subject name/credits from imports.
-                # Subjects tab is the single source of truth for metadata.
-            subject_map[code] = obj
+                subject_map[code] = obj
+            else:
+                subjects_not_found.append(code)
 
         # ── Write marks ────────────────────────────────────────────────────────
         for rec in parsed.get("records", []):
@@ -2804,9 +2811,13 @@ class AnalyticsAI:
                 continue
 
             # Parse marks value
-            is_absent = bool(rec.get("is_absent"))
+            # is_absent can come from the parser (is_absent key) or be inferred
+            # from marks_raw itself when the LLM / CSV path passes the raw string
+            # (e.g. "AB", "ab", "ABS", "ABSENT", "A/B").
+            _marks_str = str(marks_raw).strip().upper() if marks_raw is not None else ''
+            is_absent = bool(rec.get("is_absent")) or _marks_str in ('AB', 'A/B', 'ABS', 'ABSENT')
             try:
-                marks = Decimal(str(marks_raw)) if marks_raw is not None else None
+                marks = Decimal(str(marks_raw)) if (marks_raw is not None and not is_absent) else None
             except InvalidOperation:
                 marks = None
 
@@ -2864,20 +2875,28 @@ class AnalyticsAI:
 
                 if internal_num == 1:
                     result.internal1 = marks
+                    result.internal1_absent = is_absent
                 elif internal_num == 2:
                     result.internal2 = marks
+                    result.internal2_absent = is_absent
                 elif internal_num == 3:
                     result.internal3 = marks
+                    result.internal3_absent = is_absent
                 else:
                     result.internal1 = marks
+                    result.internal1_absent = is_absent
 
                 result.save()
                 rows_inserted += 1
 
         # Build summary
         summary_parts = []
-        if subjects_created:
-            summary_parts.append(f"Created {len(subjects_created)} new subject(s): {', '.join(subjects_created)}")
+        if subjects_not_found:
+            summary_parts.append(
+                f"{len(subjects_not_found)} subject code(s) from the document were not found "
+                f"in the subjects table and were skipped: {', '.join(subjects_not_found)}. "
+                f"Please add them manually via the Subjects tab first."
+            )
         if subjects_existed:
             summary_parts.append(f"{len(subjects_existed)} subject(s) already existed")
         summary_parts.append(f"Inserted/updated {rows_inserted} mark record(s)")
@@ -2903,7 +2922,8 @@ class AnalyticsAI:
             )
 
         return {
-            "subjects_created": subjects_created,
+            "subjects_created": [],          # always empty — AI never creates subjects
+            "subjects_not_found": subjects_not_found,
             "subjects_existed": subjects_existed,
             "rows_inserted": rows_inserted,
             "rows_skipped": rows_skipped,

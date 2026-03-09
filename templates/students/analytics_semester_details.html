@@ -5,29 +5,22 @@
 
 {% block content %}
 
-<!-- Summary Cards -->
-<div class="sem-section">
-    <p class="sem-label">{{ semester.name }} Summary</p>
-    <div class="stats-row">
-        <div class="stat-card">
-            <span class="stat-label">Total Students</span>
-            <span class="stat-value">{{ students|length }}</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">Subjects</span>
-            <span class="stat-value" id="subject-count">{{ subjects|length }}</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">Status</span>
-            <span class="status-badge status-{{ program_semester.status|default:'upcoming' }}">
+<!-- ══════ UNIFIED CONTROL PANEL ══════ -->
+<div class="panel main-panel">
+
+    <!-- Context Strip: quick-glance metadata -->
+    <div class="ctx-strip">
+        <div class="ctx-strip-left">
+            <span class="ctx-strip-chip"><i class="fa-solid fa-users"></i> <strong>{{ students|length }}</strong> Students</span>
+            <span class="ctx-strip-chip"><i class="fa-solid fa-book-open"></i> <strong id="subject-count">{{ subjects|length }}</strong> Subjects</span>
+            <span class="ctx-strip-chip ctx-strip-status status-{{ program_semester.status|default:'upcoming' }}">
                 {{ program_semester.status|default:"upcoming"|title }}
             </span>
         </div>
+        <a href="{% url 'students:analytics_batch_semesters' department.id batch_year %}" class="ctx-strip-back">
+            <i class="fa-solid fa-arrow-left"></i> Back
+        </a>
     </div>
-</div>
-
-<!-- Unified Tab + Filter Panel -->
-<div class="panel">
 
     <!-- Tab Navigation -->
     <div class="tab-nav">
@@ -47,12 +40,11 @@
             <span>Subjects</span>
             <span class="tab-badge">{{ subjects|length }}</span>
         </button>
-
     </div>
 
-    <!-- Filter Bar (only for marks tabs) -->
+    <!-- ── Primary Filter: Internal + Section (controls stats) ── -->
     {% if active_tab != 'subjects' %}
-    <div class="filter-bar">
+    <div class="filter-bar filter-bar-primary">
         <div class="filter-row">
             {% if active_tab == 'internals' %}
             <div class="filter-item">
@@ -64,7 +56,67 @@
                 </select>
             </div>
             {% endif %}
+            {% if available_sections %}
             <div class="filter-item">
+                <label><i class="fa-solid fa-users-rectangle"></i> Section</label>
+                <select id="section-select" onchange="updateFilters()">
+                    <option value="">All Sections</option>
+                    {% for sec in available_sections %}
+                    <option value="{{ sec }}" {% if section_filter == sec %}selected{% endif %}>Section {{ sec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Aggregate Stats (across ALL subjects for chosen internal + section) ── -->
+    {% if active_tab == 'internals' and internal_stats %}
+    <div class="internal-stats-bar">
+        <div class="istat-card istat-total">
+            <span class="istat-icon"><i class="fa-solid fa-users"></i></span>
+            <div class="istat-body">
+                <span class="istat-label">Class Strength</span>
+                <span class="istat-value">{{ internal_stats.total_strength }}</span>
+            </div>
+        </div>
+        <div class="istat-card istat-appeared">
+            <span class="istat-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <div class="istat-body">
+                <span class="istat-label">Appeared (All Sub.)</span>
+                <span class="istat-value">{{ internal_stats.appeared_all }}</span>
+            </div>
+        </div>
+        <div class="istat-card istat-passed">
+            <span class="istat-icon"><i class="fa-solid fa-circle-check"></i></span>
+            <div class="istat-body">
+                <span class="istat-label">Passed (All Sub.)</span>
+                <span class="istat-value">{{ internal_stats.passed_all }}</span>
+            </div>
+        </div>
+        <div class="istat-card istat-failed">
+            <span class="istat-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+            <div class="istat-body">
+                <span class="istat-label">Failed (All Sub.)</span>
+                <span class="istat-value">{{ internal_stats.failed_all }}</span>
+            </div>
+        </div>
+        <div class="istat-card istat-pct">
+            <span class="istat-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            <div class="istat-body">
+                <span class="istat-label">Overall Pass %</span>
+                <span class="istat-value">{{ internal_stats.pass_pct }}<span class="istat-unit">%</span></span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Subject Filter: pick a subject to view marks ── -->
+    {% if active_tab != 'subjects' %}
+    <div class="filter-bar filter-bar-subject">
+        <div class="filter-row">
+            <div class="filter-item filter-item-grow">
                 <label><i class="fa-solid fa-book"></i> Subject</label>
                 <select id="subject-select" onchange="updateFilters()">
                     <option value="">— Select Subject —</option>
@@ -79,13 +131,50 @@
             {% if selected_subject_code %}
             <div class="filter-item filter-item-action">
                 {% for subject in subjects %}{% if subject.code == selected_subject_code %}
-                <button class="btn btn-outline-primary"
+                <button class="btn btn-outline-primary btn-sm"
                         onclick="openEditModal('{{ subject.code }}','{{ subject.name|escapejs }}',{{ subject.credits }})">
-                    <i class="fa-solid fa-pen-to-square"></i> Edit Subject
+                    <i class="fa-solid fa-pen-to-square"></i> Edit
                 </button>
                 {% endif %}{% endfor %}
+                <button class="btn btn-danger-outline btn-sm" onclick="bulkDeleteMarks()">
+                    <i class="fa-solid fa-trash-can"></i> Delete All
+                </button>
             </div>
             {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Per-Subject Analytics (Appeared / Passed / Failed / Pass%) ── -->
+    {% if subject_stats %}
+    <div class="subject-stats-bar">
+        <div class="sstat-card sstat-appeared">
+            <span class="sstat-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <div class="sstat-body">
+                <span class="sstat-label">Students Appeared</span>
+                <span class="sstat-value">{{ subject_stats.appeared }}</span>
+            </div>
+        </div>
+        <div class="sstat-card sstat-passed">
+            <span class="sstat-icon"><i class="fa-solid fa-circle-check"></i></span>
+            <div class="sstat-body">
+                <span class="sstat-label">Students Passed</span>
+                <span class="sstat-value">{{ subject_stats.passed }}</span>
+            </div>
+        </div>
+        <div class="sstat-card sstat-failed">
+            <span class="sstat-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+            <div class="sstat-body">
+                <span class="sstat-label">Students Failed</span>
+                <span class="sstat-value">{{ subject_stats.failed }}</span>
+            </div>
+        </div>
+        <div class="sstat-card sstat-pct">
+            <span class="sstat-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            <div class="sstat-body">
+                <span class="sstat-label">Pass %</span>
+                <span class="sstat-value">{{ subject_stats.pass_pct }}<span class="sstat-unit">%</span></span>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -180,11 +269,13 @@
             </thead>
             <tbody>
                 {% for result in results_data %}
-                <tr id="marks-row-{{ result.result_id }}" class="{% if result.grade == 'U' %}arrear-row{% endif %}">
+                <tr id="marks-row-{{ result.result_id }}" class="{% if result.is_fail %}fail-row{% endif %}">
                     <td>{{ result.student.roll_number }}</td>
                     <td>{{ result.student.student_name }}</td>
                     {% if active_tab == 'internals' %}
-                    <td>{{ result.mark|default:"—" }}</td>
+                    <td>
+                        {% if result.is_absent %}<span class="absent-badge">AB</span>{% elif result.is_fail %}<span class="fail-mark">{{ result.mark|default:"—" }}</span>{% else %}{{ result.mark|default:"—" }}{% endif %}
+                    </td>
                     {% else %}
                     <td>{{ result.marks|default:"—" }}</td>
                     <td>{{ result.max_marks|default:"—" }}</td>
@@ -296,12 +387,7 @@
 {% endif %}
 {% endif %}
 
-<!-- Back Navigation -->
-<div class="nav-row">
-    <a href="{% url 'students:analytics_batch_semesters' department.id batch_year %}" class="btn btn-secondary">
-        <i class="fa-solid fa-arrow-left"></i> Back to Semesters
-    </a>
-</div>
+<!-- Back nav moved into context strip above -->
 
 
 <!-- ============ ADD SUBJECT MODAL ============ -->
@@ -425,10 +511,12 @@ function switchTab(tab) {
 function updateFilters() {
     const internal = document.getElementById('internal-select')?.value || '';
     const subject  = document.getElementById('subject-select')?.value  || '';
+    const section  = document.getElementById('section-select')?.value  || '';
     const url = new URL(window.location);
     url.searchParams.set('tab', '{{ active_tab }}');
     internal ? url.searchParams.set('internal', internal) : url.searchParams.delete('internal');
     subject  ? url.searchParams.set('subject',  subject)  : url.searchParams.delete('subject');
+    section  ? url.searchParams.set('section',  section)  : url.searchParams.delete('section');
     window.location.href = url.toString();
 }
 
@@ -618,46 +706,60 @@ document.addEventListener('click', e => {
 
 <style>
 /* ── Layout ──────────────────────────────────────────────────────────────── */
-.sem-section { margin-bottom: 1.6rem; }
-.sem-label { font-weight: 700; font-size: 1.3rem; color: #5a6a85; margin-bottom: 1rem; }
 
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.2rem;
-}
-
-.stat-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 1.8rem 2rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+/* ── Context Strip: compact metadata bar at top of panel ─────────────── */
+.ctx-strip {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: space-between;
+    padding: 0.7rem 2rem;
+    background: linear-gradient(135deg, #f7f8ff 0%, #eef0fb 100%);
+    border-bottom: 1px solid #e8ebf4;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
-
-.stat-label {
-    font-size: 1.2rem;
+.ctx-strip-left {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+.ctx-strip-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1.15rem;
+    color: #5a6a85;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.ctx-strip-chip i { color: #667eea; font-size: 1.1rem; }
+.ctx-strip-chip strong { color: #2c3e50; font-weight: 700; }
+.ctx-strip-status {
+    padding: 0.2rem 0.85rem;
+    border-radius: 20px;
+    font-size: 1.05rem;
     font-weight: 600;
-    color: #7f8c8d;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
 }
-
-.stat-value {
-    font-size: 2.8rem;
-    font-weight: 800;
+.ctx-strip-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1.15rem;
+    font-weight: 600;
     color: #667eea;
-    line-height: 1;
+    text-decoration: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    transition: background 0.15s;
 }
+.ctx-strip-back:hover { background: rgba(102,126,234,0.1); }
 
 .status-badge {
     display: inline-block;
-    padding: 0.4rem 1.2rem;
+    padding: 0.3rem 1rem;
     border-radius: 20px;
-    font-size: 1.3rem;
+    font-size: 1.15rem;
     font-weight: 600;
 }
 .status-active   { background: #d4edda; color: #155724; }
@@ -724,9 +826,13 @@ document.addEventListener('click', e => {
 
 /* ── Filter Bar ──────────────────────────────────────────────────────────── */
 .filter-bar {
-    padding: 1.4rem 2rem;
+    padding: 1rem 2rem;
     background: #fafbff;
     border-top: 1px solid #f0f2f5;
+}
+.filter-bar-subject {
+    background: #f7f8fc;
+    border-top: 1px solid #ebeef5;
 }
 
 .filter-row {
@@ -741,6 +847,9 @@ document.addEventListener('click', e => {
     flex-direction: column;
     gap: 0.5rem;
 }
+
+.filter-item-grow { flex: 1; min-width: 200px; }
+.filter-item-grow select { width: 100%; min-width: 0; }
 
 .filter-item label {
     font-size: 1.15rem;
@@ -768,6 +877,162 @@ document.addEventListener('click', e => {
 .filter-item select:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
 
 .filter-item-action { justify-content: flex-end; margin-left: auto; }
+
+/* ── Internal Aggregate Stats Bar (inside panel) ─────────────────────── */
+.internal-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border-top: 1px solid #f0f2f5;
+}
+
+.istat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.5rem;
+    border-right: 1px solid #f0f2f5;
+    background: #fcfcff;
+}
+.istat-card:last-child { border-right: none; }
+
+.istat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.istat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.istat-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #8a9bb5;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.istat-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.istat-unit {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-left: 1px;
+}
+
+.istat-total  .istat-icon  { background: #eff1ff; color: #667eea; }
+.istat-total  .istat-value { color: #667eea; }
+
+.istat-appeared .istat-icon  { background: #e8f4fd; color: #3498db; }
+.istat-appeared .istat-value { color: #3498db; }
+
+.istat-passed .istat-icon  { background: #eafaf1; color: #27ae60; }
+.istat-passed .istat-value { color: #27ae60; }
+
+.istat-pct  .istat-icon  { background: #fef5ec; color: #e67e22; }
+.istat-pct  .istat-value { color: #e67e22; }
+
+.istat-failed .istat-icon  { background: #fdeaea; color: #e74c3c; }
+.istat-failed .istat-value { color: #e74c3c; }
+
+@media (max-width: 900px) {
+    .internal-stats-bar { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 520px) {
+    .internal-stats-bar { grid-template-columns: 1fr; }
+    .istat-card { border-right: none; border-bottom: 1px solid #f0f2f5; }
+}
+
+/* ── Per-Subject Stats Bar ───────────────────────────────────────────────── */
+.subject-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid #e8ecf3;
+    background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
+}
+
+.sstat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.5rem;
+    border-right: 1px solid #e8ecf3;
+}
+.sstat-card:last-child { border-right: none; }
+
+.sstat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.sstat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.sstat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #8a9bb5;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.sstat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.sstat-unit {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-left: 1px;
+}
+
+.sstat-appeared .sstat-icon  { background: #e8f4fd; color: #3498db; }
+.sstat-appeared .sstat-value { color: #3498db; }
+
+.sstat-passed .sstat-icon  { background: #eafaf1; color: #27ae60; }
+.sstat-passed .sstat-value { color: #27ae60; }
+
+.sstat-failed .sstat-icon  { background: #fdeaea; color: #e74c3c; }
+.sstat-failed .sstat-value { color: #e74c3c; }
+
+.sstat-pct .sstat-icon  { background: #fef5ec; color: #e67e22; }
+.sstat-pct .sstat-value { color: #e67e22; }
+
+@media (max-width: 900px) {
+    .subject-stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .sstat-card:nth-child(2) { border-right: none; }
+}
+@media (max-width: 520px) {
+    .subject-stats-bar { grid-template-columns: 1fr; }
+    .sstat-card { border-right: none; border-bottom: 1px solid #e8ecf3; }
+}
 
 /* ── Subjects Panel ──────────────────────────────────────────────────────── */
 .subjects-panel { padding: 0; }
@@ -817,6 +1082,15 @@ document.addEventListener('click', e => {
 }
 .data-table tbody tr:hover { background: #f9faff; }
 .arrear-row { background: #fff5f5 !important; }
+.fail-row { background: #fff5f5 !important; }
+.fail-row:hover { background: #ffe8e8 !important; }
+.fail-mark {
+    display: inline-block;
+    background: #fdeaea;
+    color: #e74c3c;
+    font-weight: 700;
+    font-size: 1.4rem;
+}
 
 .code-pill {
     display: inline-block;
@@ -849,6 +1123,17 @@ document.addEventListener('click', e => {
     color: #2e7d32;
 }
 .grade-badge.fail { background: #ffcdd2; color: #c62828; }
+
+.absent-badge {
+    display: inline-block;
+    padding: 0.3rem 0.9rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    background: #fff3e0;
+    color: #e65100;
+    letter-spacing: 0.5px;
+}
 
 .arrear-count { font-weight: 700; font-size: 1.3rem; color: #2c3e50; }
 .arrear-count.has-arrears { color: #c62828; }
@@ -917,6 +1202,19 @@ document.addEventListener('click', e => {
 .btn-danger { background: #e74c3c; color: white; }
 .btn-danger:hover { background: #c0392b; }
 
+.btn-danger-outline {
+    background: white;
+    color: #e74c3c;
+    border: 1.5px solid #e74c3c;
+}
+.btn-danger-outline:hover { background: #e74c3c; color: white; }
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 1.15rem;
+    border-radius: 6px;
+}
+
 /* ── Navigation ──────────────────────────────────────────────────────────── */
 .nav-row { margin-top: 0.5rem; }
 
@@ -939,7 +1237,7 @@ document.addEventListener('click', e => {
     background: white;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-    width: 520px;
+    width: 640px;
     max-width: 95vw;
     max-height: 90vh;
     display: flex;
@@ -1057,7 +1355,8 @@ document.addEventListener('click', e => {
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-    .stats-row { grid-template-columns: 1fr; }
+    .ctx-strip { flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+    .ctx-strip-back { align-self: flex-start; }
     .filter-row { flex-direction: column; gap: 1rem; }
     .filter-item select { min-width: 100%; }
     .filter-item-action { margin-left: 0; }
@@ -1066,10 +1365,7 @@ document.addEventListener('click', e => {
     .form-grid { grid-template-columns: 1fr; }
 }
 
-/* Ensure content is not hidden behind fixed chat bar */
-body {
-    padding-bottom: 130px;
-}
+/* No bottom padding needed — chat is a side panel now */
 
 /* ── Inline marks editing ───────────────────────────────────────────────── */
 
@@ -1103,72 +1399,190 @@ body {
 .mutation-chat.error { background: #fff4f4; border-color: #e74c3c; }
 .mutation-detail { font-size: .78rem; color: #555; margin-top: 0.3rem; white-space: pre-wrap; }
 
-/* ── Chat bar ────────────────────────────────────────────────────────────── */
+/* ── Chat Side Panel ──────────────────────────────────────────────────── */
 
+/* Floating toggle button (visible when panel is closed) */
+.chat-fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 4px 20px rgba(102,126,234,0.4);
+    z-index: 1200;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.chat-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(102,126,234,0.55);
+}
+.chat-fab .fab-badge {
+    position: absolute;
+    top: -2px; right: -2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.chat-fab.has-unread .fab-badge { display: flex; }
+
+/* Side panel (slides in from right) */
 #chatPanel {
     position: fixed;
-    bottom: 0;
-    left: 250px;           /* align with sidebar width */
+    top: 0;
     right: 0;
+    width: 500px;
+    height: 100vh;
     background: #fff;
-    border-top: 1px solid #dce2ef;
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    border-left: 1px solid #dce2ef;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.1);
     z-index: 1100;
     display: flex;
     flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#chatPanel.open {
+    transform: translateX(0);
 }
 
-/* Compact one-line header */
+/* Backdrop overlay */
+.chat-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,20,40,0.18);
+    z-index: 1099;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.chat-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Header */
 .chat-header {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.55rem 1.4rem;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    gap: 0.7rem;
+    padding: 1rem 1.2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     flex-shrink: 0;
 }
 .chat-header-icon {
-    width: 26px; height: 26px;
+    width: 32px; height: 32px;
     background: rgba(255,255,255,0.2);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem; color: white; flex-shrink: 0;
+    font-size: 1.3rem; color: white; flex-shrink: 0;
 }
 .chat-header-title {
-    font-size: 1.25rem; font-weight: 700; color: white; white-space: nowrap;
+    font-size: 1.3rem; font-weight: 700; color: white; white-space: nowrap;
 }
 .chat-header-sep {
-    width: 1px; height: 16px; background: rgba(255,255,255,0.3); flex-shrink: 0;
+    width: 1px; height: 18px; background: rgba(255,255,255,0.25); flex-shrink: 0;
 }
 .ctx-chip {
-    background: rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
     border-radius: 20px;
-    padding: 0.15rem 0.7rem;
-    font-size: 1.05rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    display: flex; align-items: center; gap: 0.35rem;
+    display: inline-flex; align-items: center; gap: 0.3rem;
     white-space: nowrap;
 }
-.chat-header-hint {
+.chat-header-actions {
     margin-left: auto;
-    font-size: 1rem;
-    color: rgba(255,255,255,0.65);
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.chat-header-btn {
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.8);
+    border-radius: 6px;
+    padding: 0.35rem 0.55rem;
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.chat-header-btn:hover {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+}
+.chat-header-btn.danger:hover {
+    background: rgba(231,76,60,0.6);
+    border-color: rgba(231,76,60,0.4);
 }
 
-/* Messages (hidden until there are messages) */
+/* Context chips row (below header) */
+.chat-ctx-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: #f5f6ff;
+    border-bottom: 1px solid #edf0f7;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.chat-ctx-row .ctx-chip {
+    background: #e8ebff;
+    color: #4a5aad;
+}
+
+/* Messages area — fills remaining space */
 #chatMessages {
     display: none;
     flex-direction: column;
-    gap: 0.7rem;
+    gap: 0.8rem;
     overflow-y: auto;
-    max-height: 220px;
-    padding: 0.8rem 1.4rem;
+    flex: 1;
+    padding: 1rem 1.2rem;
     scroll-behavior: smooth;
-    border-bottom: 1px solid #f0f2f5;
 }
 #chatMessages.has-messages { display: flex; }
+
+/* Empty state when no messages */
+.chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #b0b8d0;
+    padding: 2rem;
+    text-align: center;
+}
+.chat-empty i {
+    font-size: 3rem;
+    opacity: 0.4;
+}
+.chat-empty p {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    max-width: 280px;
+}
 
 @keyframes msgIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 
@@ -1176,7 +1590,7 @@ body {
 .chat-msg.user { flex-direction: row-reverse; }
 
 .chat-avatar {
-    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.1rem;
 }
@@ -1184,10 +1598,10 @@ body {
 .chat-msg.user .chat-avatar { background: #667eea; color: white; }
 
 .chat-bubble {
-    max-width: 72%;
+    max-width: 85%;
     padding: 0.6rem 1rem;
     border-radius: 12px;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     line-height: 1.5;
 }
 .chat-msg.ai   .chat-bubble { background: #f5f6ff; color: #2c3e50; border-radius: 3px 12px 12px 12px; }
@@ -1195,16 +1609,16 @@ body {
 
 /* Table inside bubble */
 .chat-bubble .resp-table-wrap { overflow-x: auto; margin-top: 0.6rem; border-radius: 6px; }
-.chat-bubble table { border-collapse: collapse; font-size: 1.15rem; width: 100%; min-width: 260px; }
-.chat-bubble table th { background: #667eea; color: white; padding: 0.55rem 0.8rem; text-align: left; font-weight: 600; white-space: nowrap; }
-.chat-bubble table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #edf0f7; color: #2c3e50; }
+.chat-bubble table { border-collapse: collapse; font-size: 1.05rem; width: 100%; min-width: 220px; }
+.chat-bubble table th { background: #667eea; color: white; padding: 0.45rem 0.7rem; text-align: left; font-weight: 600; white-space: nowrap; }
+.chat-bubble table td { padding: 0.4rem 0.7rem; border-bottom: 1px solid #edf0f7; color: #2c3e50; }
 .chat-bubble table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .chat-bubble table td.pos-cell { color: #27ae60; font-weight: 700; }
 .chat-bubble table td.neg-cell { color: #e74c3c; font-weight: 700; }
 .chat-bubble table tbody tr:hover { background: #f5f6ff; }
-.chat-bubble .resp-title { font-weight: 700; font-size: 1.25rem; color: #2c3e50; margin-bottom: 0.4rem; }
-.chat-bubble .resp-para  { line-height: 1.7; font-size: 1.15rem; }
-.chat-bubble .resp-list  { margin: 0.4rem 0 0 1.2rem; padding: 0; font-size: 1.15rem; line-height: 1.9; }
+.chat-bubble .resp-title { font-weight: 700; font-size: 1.15rem; color: #2c3e50; margin-bottom: 0.4rem; }
+.chat-bubble .resp-para  { line-height: 1.7; font-size: 1.1rem; }
+.chat-bubble .resp-list  { margin: 0.4rem 0 0 1.2rem; padding: 0; font-size: 1.1rem; line-height: 1.9; }
 .chat-bubble .csv-btn {
     display: inline-flex; align-items: center; gap: 0.35rem;
     margin-bottom: 0.5rem; padding: 0.3rem 0.75rem;
@@ -1227,10 +1641,10 @@ body {
 .status-badge.pass { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
 .status-badge.fail { background: #ffcdd2; color: #c62828; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
 
-.chat-bubble .import-summary { font-size: 1.2rem; line-height: 1.6; }
+.chat-bubble .import-summary { font-size: 1.1rem; line-height: 1.6; }
 .chat-bubble .import-summary .tag {
     display: inline-block; border-radius: 4px; padding: 0.1rem 0.45rem;
-    font-weight: 700; font-size: 1rem; margin: 0 0.15rem;
+    font-weight: 700; font-size: 0.95rem; margin: 0 0.15rem;
 }
 .chat-bubble .import-summary .tag.new  { background: #d4edda; color: #155724; }
 .chat-bubble .import-summary .tag.ok   { background: #cce5ff; color: #004085; }
@@ -1242,13 +1656,15 @@ body {
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes blink { 0%,80%,100%{opacity:0.3;} 40%{opacity:1;} }
 
-/* Input row */
+/* Input row — pinned at bottom of panel */
 .chat-input-area {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.65rem 1.4rem;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
     flex-shrink: 0;
+    border-top: 1px solid #edf0f7;
+    background: #fafbff;
 }
 
 .file-preview-inline {
@@ -1258,11 +1674,11 @@ body {
     background: #eff1ff;
     border-radius: 20px;
     padding: 0.25rem 0.75rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #667eea;
     font-weight: 600;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-shrink: 0;
@@ -1276,55 +1692,85 @@ body {
     flex: 1;
     border: 1.5px solid #dce2ef;
     border-radius: 22px;
-    padding: 0.6rem 1.1rem;
-    font-size: 1.25rem;
+    padding: 0.55rem 1rem;
+    font-size: 1.15rem;
     resize: none;
-    max-height: 100px;
+    max-height: 80px;
     overflow-y: auto;
     font-family: inherit;
     line-height: 1.45;
-    background: #f9faff;
+    background: #fff;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 #chatTextInput:focus {
     outline: none;
     border-color: #667eea;
-    background: white;
     box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 
 .chat-action-btn {
-    width: 36px; height: 36px;
+    width: 34px; height: 34px;
     border-radius: 50%; border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; transition: all 0.18s; flex-shrink: 0;
+    font-size: 1.2rem; transition: all 0.18s; flex-shrink: 0;
 }
 #chatAttachBtn { background: #f0f2f5; color: #667eea; }
 #chatAttachBtn:hover { background: #eff1ff; }
 #chatSendBtn { background: #667eea; color: white; }
 #chatSendBtn:hover { background: #5568d3; transform: scale(1.06); }
 #chatSendBtn:disabled { background: #c0c8e0; cursor: not-allowed; transform: none; }
-.input-hint { font-size: 0; /* hidden — keyboard shortcut in placeholder is enough */ }
+
+/* Responsive: smaller screens go full width */
+@media (max-width: 600px) {
+    #chatPanel { width: 100vw; }
+    .chat-fab { bottom: 1.2rem; right: 1.2rem; width: 48px; height: 48px; font-size: 1.4rem; }
+}
 </style>
 
 
-<!-- ═══════════════ ANALYTICS CHAT BAR ═══════════════ -->
+<!-- ═══════════════ AI CHAT SIDE PANEL ═══════════════ -->
 
+<!-- Floating toggle button -->
+<button class="chat-fab" id="chatFab" onclick="toggleChatPanel()" title="AI Analyst">
+    <i class="fa-solid fa-brain"></i>
+    <span class="fab-badge" id="fabBadge"></span>
+</button>
+
+<!-- Backdrop -->
+<div class="chat-backdrop" id="chatBackdrop" onclick="toggleChatPanel()"></div>
+
+<!-- Side Panel -->
 <div id="chatPanel">
 
-    <!-- Compact header -->
+    <!-- Header -->
     <div class="chat-header">
         <div class="chat-header-icon"><i class="fa-solid fa-brain"></i></div>
         <span class="chat-header-title">AI Analyst</span>
-        <div class="chat-header-sep"></div>
+        <div class="chat-header-actions">
+            <button class="chat-header-btn danger" onclick="clearChatSession()" title="Clear history">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button class="chat-header-btn" onclick="toggleChatPanel()" title="Close panel">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Context chips -->
+    <div class="chat-ctx-row">
         <span class="ctx-chip"><i class="fa-solid fa-building"></i> {{ department.name }}</span>
         <span class="ctx-chip"><i class="fa-solid fa-calendar"></i> {{ batch_year }}</span>
         <span class="ctx-chip"><i class="fa-solid fa-layer-group"></i> {{ semester.name }}</span>
-        <span class="chat-header-hint">Ask anything — stats, comparisons, rankings, grades, trends&hellip;</span>
     </div>
 
-    <!-- Messages (shown only once conversation starts) -->
+    <!-- Messages -->
     <div id="chatMessages"></div>
+
+    <!-- Empty state (shown when no messages) -->
+    <div class="chat-empty" id="chatEmpty">
+        <i class="fa-solid fa-comments"></i>
+        <p>Ask anything about marks, rankings, trends, grade distribution, comparisons&hellip;</p>
+    </div>
 
     <!-- Input row -->
     <div class="chat-input-area">
@@ -1341,11 +1787,11 @@ body {
             <button class="remove-file" onclick="removeFile()" title="Remove"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <!-- Internal # override — visible only when a PDF or CSV is attached -->
+        <!-- Internal # override -->
         <div id="internalOverrideWidget" style="display:none; align-items:center; gap:0.4rem; flex-shrink:0;">
-            <label for="internalOverrideSelect" style="font-size:1.1rem; font-weight:600; color:#5a6a85; white-space:nowrap;">Internal&nbsp;#</label>
-            <select id="internalOverrideSelect" title="Which internal exam does this PDF belong to?" style="padding:0.3rem 0.6rem; border:1.5px solid #dce2ef; border-radius:6px; font-size:1.15rem; color:#2c3e50; background:#fff; cursor:pointer;">
-                <option value="auto">Auto-detect</option>
+            <label for="internalOverrideSelect" style="font-size:1rem; font-weight:600; color:#5a6a85; white-space:nowrap;">Int#</label>
+            <select id="internalOverrideSelect" title="Which internal exam does this PDF belong to?" style="padding:0.25rem 0.5rem; border:1.5px solid #dce2ef; border-radius:6px; font-size:1.05rem; color:#2c3e50; background:#fff; cursor:pointer;">
+                <option value="auto">Auto</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -1353,7 +1799,7 @@ body {
         </div>
 
         <textarea id="chatTextInput" rows="1"
-                  placeholder="Ask anything: stats, top students, grade distribution, trends, at-risk… (Enter to send)"
+                  placeholder="Ask anything… (Enter to send)"
                   onkeydown="handleEnter(event)"
                   oninput="autoResize(this)"></textarea>
 
@@ -1361,8 +1807,6 @@ body {
             <i class="fa-solid fa-paper-plane"></i>
         </button>
     </div>
-
-    <p class="input-hint"></p>
 </div>
 
 <!-- Chart.js for visualization -->
@@ -1384,6 +1828,10 @@ const MARKS_DELETE_TMPL = "{% url 'students:marks_delete' '00000000-0000-0000-00
 const END_SEM_UPDATE_TMPL = "{% url 'students:end_sem_update' '00000000-0000-0000-0000-000000000000' %}";
 const END_SEM_DELETE_TMPL = "{% url 'students:end_sem_delete' '00000000-0000-0000-0000-000000000000' %}";
 const ACTIVE_TAB = "{{ active_tab }}";
+const MARKS_BULK_DELETE_URL   = "{% url 'students:marks_bulk_delete'   department.id batch_year semester.number %}";
+const END_SEM_BULK_DELETE_URL = "{% url 'students:end_sem_bulk_delete' department.id batch_year semester.number %}";
+const SELECTED_SUBJECT_CODE   = "{{ selected_subject_code|escapejs }}";
+const SECTION_FILTER_VAL      = "{{ section_filter|escapejs }}";
 
 function toggleEditRow(id) {
     const row = document.getElementById('edit-row-' + id);
@@ -1424,6 +1872,30 @@ async function saveEditRow(id) {
     } catch (e) { alert('Network error: ' + e); }
 }
 
+async function bulkDeleteMarks() {
+    if (!SELECTED_SUBJECT_CODE) { alert('Please select a subject first.'); return; }
+    const tabLabel     = ACTIVE_TAB === 'end_semester' ? 'End Semester' : 'Internal';
+    const sectionLabel = SECTION_FILTER_VAL ? ` — Section ${SECTION_FILTER_VAL}` : ' — All Sections';
+    const msg = `Delete ALL ${tabLabel} marks for subject "${SELECTED_SUBJECT_CODE}"${sectionLabel}?\n\nThis action CANNOT be undone.`;
+    if (!confirm(msg)) return;
+
+    const url = ACTIVE_TAB === 'end_semester' ? END_SEM_BULK_DELETE_URL : MARKS_BULK_DELETE_URL;
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF() },
+            body: JSON.stringify({ subject_code: SELECTED_SUBJECT_CODE, section: SECTION_FILTER_VAL }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(`${data.deleted} record(s) deleted successfully.`, 'success');
+            setTimeout(() => window.location.reload(), 900);
+        } else {
+            alert('Delete failed: ' + (data.error || 'unknown error'));
+        }
+    } catch (e) { alert('Network error: ' + e); }
+}
+
 async function inlineDeleteRow(id) {
     if (!confirm('Delete this record permanently?')) return;
     const url = (ACTIVE_TAB === 'end_semester'
@@ -1442,9 +1914,37 @@ async function inlineDeleteRow(id) {
     } catch (e) { alert('Network error: ' + e); }
 }
 
-// Focus input on page load
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('chatTextInput').focus();
+// ─── Chat panel toggle ───────────────────────────────────────────────────────
+const CHAT_OPEN_KEY = 'llm_chat_panel_open';
+
+function toggleChatPanel() {
+    const panel    = document.getElementById('chatPanel');
+    const backdrop = document.getElementById('chatBackdrop');
+    const fab      = document.getElementById('chatFab');
+    const isOpen   = panel.classList.toggle('open');
+    backdrop.classList.toggle('visible', isOpen);
+    fab.style.display = isOpen ? 'none' : 'flex';
+    try { localStorage.setItem(CHAT_OPEN_KEY, isOpen ? '1' : '0'); } catch(e) {}
+    if (isOpen) {
+        document.getElementById('chatTextInput').focus();
+        // hide unread badge
+        fab.classList.remove('has-unread');
+    }
+}
+
+function updateChatEmptyState() {
+    const msgs  = document.getElementById('chatMessages');
+    const empty = document.getElementById('chatEmpty');
+    const hasMsg = msgs && msgs.classList.contains('has-messages');
+    if (empty) empty.style.display = hasMsg ? 'none' : 'flex';
+}
+
+// Close panel on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const panel = document.getElementById('chatPanel');
+        if (panel && panel.classList.contains('open')) toggleChatPanel();
+    }
 });
 
 // ─── File handling ────────────────────────────────────────────────────────────
@@ -1483,15 +1983,76 @@ function removeFile() {
     document.getElementById('chatAttachBtn').style.opacity = '1';
 }
 
-// ─── Chat history (kept in memory for the session) ────────────────────────────
-// Each entry: { role: 'user'|'assistant', content: '...' }
-const chatHistory = [];
-const MAX_HISTORY = 20;  // keep last 20 exchanges (10 pairs)
+// ─── Persistent chat session (localStorage, keyed per user + context) ────────
+// Key encodes: userId, department, batch, semester → each context has its own history.
+// Survives page navigation and tab refreshes until the user logs out (logout clears all keys).
+const CHAT_KEY = 'llm_chat__{{ request.user.pk }}__{{ department.id }}__{{ batch_year }}__{{ semester.number }}';
+const MAX_HISTORY = 20;   // keep last 20 {role,content} pairs for AI context
+const MAX_LOG     = 60;   // keep last 60 rendered messages in the visual log
+
+// In-memory mirrors (loaded from storage on page start)
+let chatHistory = [];    // [{role:'user'|'assistant', content:'...'}]  — sent to AI
+let _chatLog    = [];    // [{role:'user'|'ai',         html:'...'}]     — for DOM replay
+let _restoring  = false; // flag: suppress re-save while restoring from storage
+let _pendingMeta = null; // extra metadata to attach to the next _chatLog entry
+
+function _readState() {
+    try {
+        const raw = localStorage.getItem(CHAT_KEY);
+        if (!raw) return { history: [], log: [] };
+        return JSON.parse(raw);
+    } catch(e) { return { history: [], log: [] }; }
+}
+
+function saveChatState() {
+    try {
+        // Trim to limits before saving
+        if (chatHistory.length > MAX_HISTORY) chatHistory = chatHistory.slice(-MAX_HISTORY);
+        if (_chatLog.length    > MAX_LOG)     _chatLog    = _chatLog.slice(-MAX_LOG);
+        localStorage.setItem(CHAT_KEY, JSON.stringify({ history: chatHistory, log: _chatLog }));
+    } catch(e) { /* storage full or blocked */ }
+}
+
+function clearChatSession() {
+    if (!confirm('Clear the entire conversation for this page?')) return;
+    chatHistory = [];
+    _chatLog    = [];
+    try { localStorage.removeItem(CHAT_KEY); } catch(e) {}
+    const msgs = document.getElementById('chatMessages');
+    msgs.innerHTML = '';
+    msgs.classList.remove('has-messages');
+    updateChatEmptyState();
+}
+
+function loadChatState() {
+    const state = _readState();
+    chatHistory = Array.isArray(state.history) ? state.history : [];
+    _chatLog    = Array.isArray(state.log)     ? state.log     : [];
+    if (_chatLog.length === 0) return;
+    _restoring = true;
+    _chatLog.forEach(entry => {
+        if (entry.chartData) {
+            // Re-render chart: generates a fresh canvas + schedules Chart.js init
+            const freshHtml = renderChart(entry.chartData);
+            const messages  = document.getElementById('chatMessages');
+            messages.classList.add('has-messages');
+            const div = document.createElement('div');
+            div.className = 'chat-msg ai';
+            div.innerHTML = `<div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="chat-bubble">${freshHtml}</div>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        } else {
+            appendMsg(entry.role, entry.html);
+        }
+    });
+    _restoring = false;
+}
 
 function pushHistory(role, content) {
     chatHistory.push({ role, content });
-    // trim oldest if over limit
     while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
+    saveChatState();
 }
 
 // Summarise an AI response into a short text string for history context
@@ -1609,7 +2170,7 @@ function renderResponse(data) {
             appendMsg('ai', `<span style="color:#e74c3c;">⚠️ ${escHtml(data.error)}</span>`);
             return;
         }
-        const newTags = data.subjects_created.map(c=>`<span class="tag new">${escHtml(c)}</span>`).join(' ');
+        const notFoundTags = (data.subjects_not_found || []).map(c=>`<span class="tag skip">${escHtml(c)}</span>`).join(' ');
         const okTags  = data.subjects_existed.map(c=>`<span class="tag ok">${escHtml(c)}</span>`).join(' ');
         const dbg = data._debug || {};
         const markLabel = data.mark_type === 'end_semester'
@@ -1633,17 +2194,14 @@ function renderResponse(data) {
             ✅ <strong>Marks imported successfully!</strong>
             <span style="float:right;opacity:.6;font-size:.8em">${escHtml(markLabel)} · ${data.pages_parsed || 1} page(s)</span>
             <br><br>
-            ${data.subjects_created.length ? `New subjects created: ${newTags}<br>` : ''}
-            ${data.subjects_existed.length ? `Existing subjects updated: ${okTags}<br>` : ''}
+            ${notFoundTags ? `⚠️ <strong>Subjects not found in subjects table (marks skipped):</strong> ${notFoundTags}<br><small style="opacity:.75">Add these subjects manually via the <em>Subjects</em> tab, then re-upload.</small><br>` : ''}
+            ${data.subjects_existed.length ? `Existing subjects matched: ${okTags}<br>` : ''}
             📝 <strong>${data.rows_inserted}</strong> mark record(s) written to database.
             ${skippedHtml}
         </div>`;
         appendMsg('ai', html);
 
-        // Reload subject count badge on page
-        document.getElementById('subject-count').textContent =
-            parseInt(document.getElementById('subject-count').textContent || '0')
-            + data.subjects_created.length;
+        // Subject count badge never changes on import — subjects are managed manually
         return;
     }
 
@@ -1652,6 +2210,7 @@ function renderResponse(data) {
         if (data.format === 'table') {
             appendMsg('ai', renderTable(data));
         } else if (data.format === 'chart') {
+            _pendingMeta = { chartData: data };  // store raw data so chart can be re-rendered on restore
             appendMsg('ai', renderChart(data));
         } else if (data.format === 'list') {
             let html = '';
@@ -1693,6 +2252,7 @@ function renderResponse(data) {
 function appendMsg(role, htmlContent) {
     const messages = document.getElementById('chatMessages');
     messages.classList.add('has-messages');
+    updateChatEmptyState();
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
     const icon = role === 'ai' ? 'fa-robot' : 'fa-user';
@@ -1701,6 +2261,22 @@ function appendMsg(role, htmlContent) {
         <div class="chat-bubble">${htmlContent}</div>`;
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+
+    // If panel is closed and AI sent a message, show unread badge
+    if (!_restoring && role === 'ai') {
+        const panel = document.getElementById('chatPanel');
+        if (!panel.classList.contains('open')) {
+            document.getElementById('chatFab').classList.add('has-unread');
+        }
+    }
+
+    // Persist to log (skip during restore to avoid duplication)
+    if (!_restoring) {
+        const entry = { role, html: htmlContent };
+        if (_pendingMeta) { Object.assign(entry, _pendingMeta); _pendingMeta = null; }
+        _chatLog.push(entry);
+        saveChatState();
+    }
 }
 
 function appendTyping() {
@@ -1854,6 +2430,21 @@ function downloadCSV(id) {
     a.click();
     URL.revokeObjectURL(a.href);
 }
+
+// ─── Restore persisted chat on page load ─────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadChatState();
+    updateChatEmptyState();
+    // Scroll to bottom after restoring
+    const msgs = document.getElementById('chatMessages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    // Restore panel open/close state
+    try {
+        if (localStorage.getItem(CHAT_OPEN_KEY) === '1') {
+            toggleChatPanel();
+        }
+    } catch(e) {}
+});
 
 </script>
 

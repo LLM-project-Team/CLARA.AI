@@ -71,11 +71,13 @@ def add_user(request):
         # Insert into cloud DB
         try:
             new_id = uuid.uuid4()
+            # derive a username from email local-part to satisfy existing DB NOT NULL constraint
+            username = email.split('@')[0]
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO users (id, institution_id, department_id, full_name, email, password_hash, role, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)
-                """, [str(new_id), institution_id, department_id, name, email, password_hash, role])
+                    INSERT INTO users (id, institution_id, department_id, username, full_name, email, password_hash, role, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                """, [str(new_id), institution_id, department_id, username, name, email, password_hash, role])
             
             # Also create Django user for login
             CustomUser.objects.create_user(

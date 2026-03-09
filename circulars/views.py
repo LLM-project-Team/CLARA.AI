@@ -5,6 +5,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import Circular, CircularTemplate
 from users.models import UserProfile
+from utils.festival_dates import resolve_festival_date
+from aa.llm_client import call_llm_chat, LLMError, LIGHT_MODEL
 import json
 import os
 import requests
@@ -159,6 +161,14 @@ All are cordially invited to participate and make this event a grand success.
 }
 
 
+def _resolve_festival_date(occasion):
+    """
+    Thin wrapper around the shared lookup in utils.festival_dates.
+    Falls back to '[Enter Date]' if the festival isn't found.
+    """
+    return resolve_festival_date(occasion, timezone.now().year)
+
+
 def get_next_circular_number():
     """Generate next circular number using real SIET format: SIET/AD/YYYY-YYYY/NN"""
     acad = _academic_year()
@@ -286,19 +296,26 @@ def generator_view(request):
     
     if template_type and template_type in CIRCULAR_TEMPLATES:
         template = CIRCULAR_TEMPLATES[template_type]
-        # Generate with default placeholders — only body content (header/signature in template image)
-        content = _generate_body_content(template['template'], template_type, 
-                                          occasion="[Enter Occasion]", holiday_date="[Enter Date]")
+        # For holiday templates, resolve the date via AI
+        if template_type == 'holiday':
+            occasion = request.GET.get('occasion', '[Enter Occasion]')
+            holiday_date = _resolve_festival_date(occasion) if occasion != '[Enter Occasion]' else '[Enter Date]'
+        else:
+            occasion = '[Enter Occasion]'
+            holiday_date = '[Enter Date]'
+        content = _generate_body_content(template['template'], template_type,
+                                          occasion=occasion, holiday_date=holiday_date)
         context['generated_content'] = content
         context['generated_title'] = template['title']
         context['edit_mode'] = True
         context['template_type'] = template_type
     
     elif auto_holiday:
-        # Quick holiday generation from dashboard
+        # Quick holiday generation from dashboard — resolve the actual date via AI
         template = CIRCULAR_TEMPLATES['holiday']
+        holiday_date = _resolve_festival_date(auto_holiday)
         content = _generate_body_content(template['template'], 'holiday',
-                                          occasion=auto_holiday, holiday_date="[Enter Date]")
+                                          occasion=auto_holiday, holiday_date=holiday_date)
         context['generated_content'] = content
         context['generated_title'] = f"Holiday Declaration - {auto_holiday}"
         context['edit_mode'] = True
@@ -435,10 +452,6 @@ def generate_ai_content(request):
     if not prompt:
         return JsonResponse({'error': 'Prompt is required'}, status=400)
 
-    # Ollama configuration from environment
-    ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-    ollama_model = os.getenv('OLLAMA_MODEL', 'llama3.1:8b')
-
     circular_no = get_next_circular_number()
     current_date = timezone.now().strftime("%d.%m.%Y")   # Real SIET date format
 
@@ -471,7 +484,9 @@ def generate_ai_content(request):
         "3. Leave a blank line after the Title line.\n"
         "4. Do NOT write a 'Subject:' line. Real SIET circulars do not have Subject lines — the body starts directly.\n"
         "5. Write the body in concise, formal paragraphs. No 'Dear All' or salutation — go straight into the content.\n"
-        "6. For holidays: state the holiday period with exact dates, the occasion, mention Mess closure, and end with well-wishes.\n"
+        "6. For holidays: you MUST use the REAL, EXACT calendar date of the festival/holiday for the current year "
+        f"({timezone.now().year}). NEVER use placeholder text like '[Enter Date]' or '[Date]'. "
+        "State the holiday period with exact dates, the occasion, mention Mess closure, and end with well-wishes.\n"
         "7. For exams: state period, instructions (carry ID, report 15 min early, no electronic devices, no malpractice).\n"
         "8. For meetings: state date, time, venue, agenda items in an indented key-value layout.\n"
         "9. For disciplinary notices: firmly state the issue, warning, and consequences.\n"
@@ -516,26 +531,14 @@ def generate_ai_content(request):
     )
     
     try:
-        response = requests.post(
-            f"{ollama_url}/api/chat",
-            json={
-                "model": ollama_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                "stream": False,
-                "options": {
-                    "temperature": 0.6,
-                    "num_predict": 600,
-                }
-            },
-            timeout=120
+        ai_body = call_llm_chat(
+            user_message=user_message,
+            system_prompt=system_prompt,
+            model=LIGHT_MODEL,
+            temperature=0.6,
+            max_tokens=600,
+            timeout=120,
         )
-        response.raise_for_status()
-        result = response.json()
-        
-        ai_body = result.get('message', {}).get('content', '').strip()
         # Strip any accidental markdown bold markers
         ai_body = ai_body.replace('**', '').replace('__', '')
         
@@ -606,21 +609,18 @@ def generate_ai_content(request):
             'title': title
         })
         
-    except requests.exceptions.ConnectionError:
-        logger.error("Cannot connect to Ollama server at %s", ollama_url)
-        return JsonResponse({
-            'error': f'Cannot connect to Ollama server at {ollama_url}. Please ensure Ollama is running.'
-        }, status=503)
-    except requests.exceptions.Timeout:
-        logger.error("Ollama request timed out")
-        return JsonResponse({
-            'error': 'AI generation timed out. Please try a simpler prompt or try again later.'
-        }, status=504)
-    except requests.exceptions.RequestException as e:
-        logger.error("Ollama request failed: %s", str(e))
-        return JsonResponse({
-            'error': f'AI service error: {str(e)}'
-        }, status=500)
+    except LLMError as e:
+        logger.error("LLM call failed: %s", str(e))
+        err = str(e)
+        if 'ConnectionError' in err or 'Connection refused' in err:
+            return JsonResponse({
+                'error': 'Cannot connect to Ollama server. Please ensure Ollama is running.'
+            }, status=503)
+        if 'Timeout' in err or 'timed out' in err:
+            return JsonResponse({
+                'error': 'AI generation timed out. Please try a simpler prompt or try again later.'
+            }, status=504)
+        return JsonResponse({'error': f'AI service error: {err}'}, status=500)
     except Exception as e:
         logger.error("Unexpected error in AI generation: %s", str(e))
         return JsonResponse({

@@ -48,6 +48,15 @@ urlpatterns = [
          views.end_sem_update_api, name='end_sem_update'),
     path('analytics/end-sem/<uuid:result_id>/delete/',
          views.end_sem_delete_api, name='end_sem_delete'),
+
+    # Bulk delete marks (all records for a subject/section)
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/sem/<int:semester_number>/marks/bulk-delete/',
+         views.marks_bulk_delete_api, name='marks_bulk_delete'),
+    path('analytics/<uuid:department_id>/batch/<str:batch_year>/sem/<int:semester_number>/end-sem/bulk-delete/',
+         views.end_sem_bulk_delete_api, name='end_sem_bulk_delete'),
+
+    # Assign sections to a batch
+    path('<uuid:department_id>/<str:batch_year>/assign-sections/', views.assign_sections_api, name='assign_sections'),
     
     # Add new student
     path('add/', views.student_add, name='student_add'),

@@ -50,10 +50,24 @@
             {% endif %}
 
             <li style="margin-top: auto;">
-                <a href="{% url 'users:logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                <a href="{% url 'users:logout' %}" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
             </li>
         </ul>
     </nav>
+
+    <script>
+    /* ── Clear all persisted chat sessions on logout ── */
+    document.getElementById('logoutLink').addEventListener('click', function() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('llm_chat__') || k === 'llm_chat_panel_open')) keysToRemove.push(k);
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch(e) { /* storage may be blocked in private mode */ }
+    });
+    </script>
 
     <main class="main-content">
 
@@ -62,12 +76,38 @@
                 <h2>{% block page_title %}Welcome{% endblock %}</h2>
                 <p>{% block page_subtitle %}System Overview{% endblock %}</p>
             </div>
+            <div class="header-clock" id="headerClock" aria-hidden="false">
+                <div class="clock-date" id="clockDate">&nbsp;</div>
+                <div class="clock-time" id="clockTime">&nbsp;</div>
+            </div>
             <div class="user-profile">
-                <div style="width: 45px; height: 45px; background: #dfe6e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 40px; height: 40px; background: #dfe6e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-user" style="color: #636e72;"></i>
                 </div>
             </div>
         </header>
+
+        <script>
+        // realtime header clock (common for all users)
+        (function() {
+            function two(n){return n<10? '0'+n: n}
+            function updateClock(){
+                try{
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+                    const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const d = document.getElementById('clockDate');
+                    const t = document.getElementById('clockTime');
+                    if(d) d.textContent = dateStr;
+                    if(t) t.textContent = timeStr;
+                }catch(e){/* ignore in older browsers */}
+            }
+            document.addEventListener('DOMContentLoaded', function(){
+                updateClock();
+                setInterval(updateClock, 1000);
+            });
+        })();
+        </script>
 
         {% block content %}
         {% endblock %}

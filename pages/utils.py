@@ -1,66 +1,50 @@
-from datetime import datetime, timedelta
-import requests
-import json
+from datetime import date
 import os
-from django.conf import settings
 import logging
+
+from utils.festival_dates import get_all_events_for_year
+from aa.llm_client import call_llm, LLMError, LIGHT_MODEL
 
 logger = logging.getLogger(__name__)
 
-# Common Indian holidays and events (can be expanded)
-INDIAN_HOLIDAYS = {
-    # National Holidays
-    'Republic Day': {'month': 1, 'day': 26, 'type': 'national'},
-    'Independence Day': {'month': 8, 'day': 15, 'type': 'national'},
-    'Gandhi Jayanti': {'month': 10, 'day': 2, 'type': 'national'},
-
-    # Festival Holidays (approximate dates - can be updated annually)
-    'Pongal': {'month': 1, 'day': 14, 'type': 'festival'},
-    'Maha Shivaratri': {'month': 2, 'day': 17, 'type': 'festival'},
-    'Holi': {'month': 3, 'day': 14, 'type': 'festival'},
-    'Ram Navami': {'month': 3, 'day': 30, 'type': 'festival'},
-    'Mahavir Jayanti': {'month': 4, 'day': 10, 'type': 'festival'},
-    'Good Friday': {'month': 4, 'day': 18, 'type': 'festival'},
-    'Buddha Purnima': {'month': 5, 'day': 12, 'type': 'festival'},
-    'Eid al-Fitr': {'month': 4, 'day': 11, 'type': 'festival'},
-    'Raksha Bandhan': {'month': 8, 'day': 19, 'type': 'festival'},
-    'Janmashtami': {'month': 8, 'day': 26, 'type': 'festival'},
-    'Ganesh Chaturthi': {'month': 9, 'day': 7, 'type': 'festival'},
-    'Dussehra': {'month': 10, 'day': 12, 'type': 'festival'},
-    'Diwali': {'month': 11, 'day': 4, 'type': 'festival'},
-    'Christmas': {'month': 12, 'day': 25, 'type': 'festival'},
-
-    # Academic Events
-    'Semester Start': {'month': 7, 'day': 1, 'type': 'academic'},
-    'Semester End': {'month': 11, 'day': 30, 'type': 'academic'},
-    'Exam Week': {'month': 11, 'day': 15, 'type': 'academic'},
-}
 
 def get_upcoming_events(days_ahead=30):
-    """Get upcoming holidays and events within the specified days ahead."""
-    today = datetime.now()
+    """
+    Get upcoming holidays and events within the specified days ahead.
+    Uses verified year-specific festival dates (no hardcoded approximations).
+    """
+    today = date.today()
     upcoming_events = []
 
-    for event_name, event_info in INDIAN_HOLIDAYS.items():
-        current_year = today.year
-        event_date = datetime(current_year, event_info['month'], event_info['day'])
+    # Gather events for this year and next (to cover year-end look-ahead)
+    events = get_all_events_for_year(today.year)
+    if days_ahead > 0:
+        events += get_all_events_for_year(today.year + 1)
 
-        if event_date < today:
-            event_date = datetime(current_year + 1, event_info['month'], event_info['day'])
-
-        days_until = (event_date - today).days
-        if days_until <= days_ahead and days_until >= 0:
+    for ev in events:
+        ev_date = ev['date']
+        days_until = (ev_date - today).days
+        if 0 <= days_until <= days_ahead:
             upcoming_events.append({
-                'name': event_name,
-                'date': event_date,
+                'name': ev['name'],
+                'date': ev_date,
                 'days_until': days_until,
-                'type': event_info['type'],
-                'date_str': event_date.strftime('%B %d, %Y'),
-                'month_day': event_date.strftime('%B %d')
+                'type': ev['type'],
+                'date_str': ev_date.strftime('%B %d, %Y'),
+                'month_day': ev_date.strftime('%B %d'),
             })
 
-    upcoming_events.sort(key=lambda x: x['date'])
-    return upcoming_events
+    # De-duplicate (same date could appear from both years list)
+    seen = set()
+    unique = []
+    for ev in upcoming_events:
+        key = (ev['name'], ev['date'])
+        if key not in seen:
+            seen.add(key)
+            unique.append(ev)
+
+    unique.sort(key=lambda x: x['date'])
+    return unique
 
 def generate_ai_insight(upcoming_events):
     """Use AI to generate insights about upcoming events."""
@@ -68,40 +52,43 @@ def generate_ai_insight(upcoming_events):
         return "No upcoming events detected."
 
     next_event = upcoming_events[0]
-    context = f"Analyze {next_event['name']} on {next_event['date_str']} for educational circular needs."
+    days = next_event['days_until']
+
+    # Build a human-readable urgency label
+    if days == 0:
+        urgency = "today"
+    elif days == 1:
+        urgency = "tomorrow"
+    else:
+        urgency = f"in {days} days"
+
+    context = (
+        f"The next holiday is {next_event['name']} on {next_event['date_str']} "
+        f"({urgency}). Write a one-line insight about preparing a circular for it."
+    )
 
     try:
         insight = get_ai_insight(context)
-        return f"{next_event['name']} ({next_event['month_day']}). {insight or 'Circular recommended.'}"
-    except:
-        return f"{next_event['name']} ({next_event['month_day']}). Circular draft recommended."
+        prefix = f"{next_event['name']} ({next_event['month_day']}) — {urgency}."
+        if insight:
+            return f"{prefix} {insight}"
+        return f"{prefix} Circular draft recommended."
+    except Exception:
+        prefix = f"{next_event['name']} ({next_event['month_day']}) — {urgency}."
+        return f"{prefix} Circular draft recommended."
 
-def get_ai_insight(context):
-    """Get AI-generated insight."""
+def get_ai_insight(context: str):
+    """Get AI-generated insight using the light model (fast, low latency)."""
     try:
-        backend = os.getenv('LLM_BACKEND', 'ollama')
-        model = os.getenv('OLLAMA_MODEL', 'llama3.1:8b')
-        url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-
-        if backend.lower() == 'ollama':
-            response = requests.post(
-                f"{url}/api/generate",
-                json={
-                    "model": model,
-                    "prompt": f"Brief insight for circular: {context}",
-                    "stream": False,
-                    "options": {"temperature": 0.3, "num_predict": 30}
-                },
-                timeout=5
-            )
-
-            if response.status_code == 200:
-                result = response.json()
-                insight = result.get('response', '').strip()
-                return insight[:80] + '...' if len(insight) > 80 else insight
-
-        return None
-    except:
+        insight = call_llm(
+            prompt=f"Brief insight for circular: {context}",
+            model=LIGHT_MODEL,
+            temperature=0.3,
+            max_tokens=40,
+            timeout=5,
+        )
+        return (insight[:80] + '...') if len(insight) > 80 else insight
+    except (LLMError, Exception):
         return None
 
 def get_system_insight():

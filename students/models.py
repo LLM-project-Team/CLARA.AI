@@ -65,6 +65,7 @@ class Student(models.Model):
     registration_number = models.CharField(max_length=50, null=True, blank=True)
     hosteller = models.BooleanField(default=False)
     roll_number = models.CharField(max_length=20)
+    section = models.CharField(max_length=10, null=True, blank=True)  # e.g. 'A', 'B', 'C'
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
@@ -166,6 +167,11 @@ class SubjectResult(models.Model):
     internal1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     internal2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     internal3 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    # Absent flags — True when the student was absent for that internal test
+    internal1_absent = models.BooleanField(default=False)
+    internal2_absent = models.BooleanField(default=False)
+    internal3_absent = models.BooleanField(default=False)
     
     # End semester marks and grade
     end_sem_marks = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)

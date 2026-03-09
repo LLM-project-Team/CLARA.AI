@@ -279,7 +279,23 @@ def student_list(request, department_id, batch_year):
     hosteller_filter = request.GET.get('hosteller', '')
     if hosteller_filter:
         students = students.filter(hosteller=(hosteller_filter == 'true'))
-    
+
+    # Filter by section
+    section_filter = request.GET.get('section', '')
+    if section_filter:
+        students = students.filter(section=section_filter)
+
+    # Build list of distinct sections for this batch (for the filter dropdown)
+    available_sections = list(
+        Student.objects.filter(
+            department_id=department_id,
+            academic_year_joining=batch_year,
+        ).exclude(section__isnull=True).exclude(section='')
+        .values_list('section', flat=True)
+        .distinct()
+        .order_by('section')
+    )
+
     total_count = students.count()
     
     # Pagination - wrapped in try/except to handle bad date data in DB
@@ -313,6 +329,8 @@ def student_list(request, department_id, batch_year):
         'search_query': search_query,
         'gender_filter': gender_filter,
         'hosteller_filter': hosteller_filter,
+        'section_filter': section_filter,
+        'available_sections': available_sections,
         'user_profile': user_profile,
         'user_name': user_profile.name if user_profile else request.user.username,
         'user_role': user_profile.role if user_profile else 'Unknown',
@@ -902,12 +920,30 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
     # Get subjects for this semester and department
     subjects = Subject.objects.filter(semester=semester, department=department).order_by('code')
     
+    # Section filter
+    section_filter = request.GET.get('section', '')
+    available_sections = list(
+        Student.objects.filter(
+            department_id=department_id,
+            academic_year_joining=batch_year,
+            is_active=True,
+        ).exclude(section__isnull=True).exclude(section='')
+        .values_list('section', flat=True)
+        .distinct()
+        .order_by('section')
+    )
+
     # Get students in this batch and department
-    students = Student.objects.filter(
+    students_qs = Student.objects.filter(
         department_id=department_id,
         academic_year_joining=batch_year,
         is_active=True
     ).order_by('roll_number')
+
+    if section_filter:
+        students_qs = students_qs.filter(section=section_filter)
+
+    students = students_qs
     
     # Get semester summary for SGPA and arrears
     semester_summaries = SemesterSummary.objects.filter(
@@ -924,6 +960,58 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
     active_tab = request.GET.get('tab', 'internals')
     
     results_data = []
+    subject_stats = None   # per-subject analytics (appeared / passed / failed / pass%)
+
+    # ── Pass threshold: all marks are out of 100; >= 50 is pass ───────────────
+    MARKS_OUT_OF   = 100
+    PASS_THRESHOLD = 50   # >= 50 % of MARKS_OUT_OF
+
+    # ── Compute overall internal stats across ALL subjects ─────────────────────
+    # These 4 stats are always computed when the Internals tab is active,
+    # regardless of which individual subject is selected for the marks table.
+    internal_stats = None
+    if active_tab == 'internals' and subjects.exists():
+        from collections import defaultdict
+        internal_field_name = f'internal{selected_internal}'
+        absent_field_name   = f'internal{selected_internal}_absent'
+
+        all_sr = SubjectResult.objects.filter(
+            student__in=students,
+            subject__in=subjects,
+        ).only('student_id', 'subject_id', 'grade',
+               'internal1', 'internal2', 'internal3',
+               'internal1_absent', 'internal2_absent', 'internal3_absent')
+
+        student_appeared = defaultdict(int)   # student_id → subjects appeared
+        student_passed   = defaultdict(int)   # student_id → subjects passed
+
+        for sr in all_sr:
+            mark  = getattr(sr, internal_field_name)
+            is_ab = getattr(sr, absent_field_name, False)
+            if mark is not None and not is_ab:
+                student_appeared[sr.student_id] += 1
+                # Pass: mark >= 50 (out of 100)
+                if float(mark) >= PASS_THRESHOLD:
+                    student_passed[sr.student_id] += 1
+
+        total_strength = students.count()
+        # Appeared = students with marks in at least one subject
+        appeared_count = len(student_appeared)
+        # Passed = students who passed every subject they appeared in
+        passed_count   = sum(
+            1 for sid in student_appeared
+            if student_passed[sid] == student_appeared[sid]
+        )
+        failed_count = appeared_count - passed_count
+        pass_pct = round(passed_count / appeared_count * 100, 1) if appeared_count > 0 else 0.0
+
+        internal_stats = {
+            'total_strength': total_strength,
+            'appeared_all':   appeared_count,
+            'passed_all':     passed_count,
+            'failed_all':     failed_count,
+            'pass_pct':       pass_pct,
+        }
     
     if active_tab == 'internals' and selected_subject_code:
         try:
@@ -932,22 +1020,58 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
                 student__in=students,
                 subject=subject
             ).select_related('student')
-            
+
+            # ── Per-subject internal analytics ─────────────────────────────
+            internal_field_name = f'internal{selected_internal}'
+            absent_field_name   = f'internal{selected_internal}_absent'
+            subj_appeared = 0
+            subj_passed   = 0
+
             for result in subject_results:
                 internal_field = f'internal{selected_internal}'
-                mark = getattr(result, internal_field)
+                absent_field   = f'internal{selected_internal}_absent'
+                mark      = getattr(result, internal_field)
+                is_absent = getattr(result, absent_field, False)
+
+                # Count analytics — marks out of 100, >= 50 is pass
+                if mark is not None and not is_absent:
+                    subj_appeared += 1
+                    if float(mark) >= PASS_THRESHOLD:
+                        subj_passed += 1
+
+                # Determine pass/fail for this row
+                is_fail = False
+                if is_absent:
+                    is_fail = True
+                elif mark is not None and float(mark) < PASS_THRESHOLD:
+                    is_fail = True
+
                 results_data.append({
                     'result_id': str(result.id),
                     'student': result.student,
                     'mark': mark,
+                    'is_absent': is_absent,
+                    'is_fail': is_fail,
                     'internal1': result.internal1,
                     'internal2': result.internal2,
                     'internal3': result.internal3,
+                    'internal1_absent': result.internal1_absent,
+                    'internal2_absent': result.internal2_absent,
+                    'internal3_absent': result.internal3_absent,
                     'end_sem_marks': result.end_sem_marks,
                     'grade': result.grade,
                     'grade_points': result.grade_points,
                     'summary': summary_dict.get(result.student_id),
                 })
+
+            subj_failed  = subj_appeared - subj_passed
+            subj_pass_pct = round(subj_passed / subj_appeared * 100, 1) if subj_appeared > 0 else 0.0
+            subject_stats = {
+                'appeared': subj_appeared,
+                'passed':   subj_passed,
+                'failed':   subj_failed,
+                'pass_pct': subj_pass_pct,
+            }
         except Subject.DoesNotExist:
             pass
     
@@ -959,8 +1083,31 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
                 student__in=students,
                 subject=subject
             ).select_related('student')
-            
+
+            # ── Per-subject end-semester analytics ─────────────────────────
+            subj_appeared = 0
+            subj_passed   = 0
+
             for result in end_sem_results:
+                # Appeared = not absent
+                if result.result_status not in ('AB',):
+                    subj_appeared += 1
+                    # Pass: marks >= 50 (out of 100); fallback to result_status
+                    if result.marks is not None:
+                        if float(result.marks) >= PASS_THRESHOLD:
+                            subj_passed += 1
+                    elif result.result_status == 'PASS':
+                        subj_passed += 1
+
+                # Determine pass/fail for this row
+                is_fail = False
+                if result.result_status == 'AB':
+                    is_fail = True
+                elif result.marks is not None and float(result.marks) < PASS_THRESHOLD:
+                    is_fail = True
+                elif result.result_status == 'FAIL':
+                    is_fail = True
+
                 results_data.append({
                     'result_id': str(result.id),
                     'student': result.student,
@@ -971,8 +1118,18 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
                     'result_status': result.result_status,
                     'exam_date': result.exam_date,
                     'is_revaluation': result.is_revaluation,
+                    'is_fail': is_fail,
                     'summary': summary_dict.get(result.student_id),
                 })
+
+            subj_failed  = subj_appeared - subj_passed
+            subj_pass_pct = round(subj_passed / subj_appeared * 100, 1) if subj_appeared > 0 else 0.0
+            subject_stats = {
+                'appeared': subj_appeared,
+                'passed':   subj_passed,
+                'failed':   subj_failed,
+                'pass_pct': subj_pass_pct,
+            }
         except Subject.DoesNotExist:
             pass
     
@@ -992,9 +1149,74 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
         'selected_subject_code': selected_subject_code,
         'active_tab': active_tab,
         'summary_dict': summary_dict,
+        'section_filter': section_filter,
+        'available_sections': available_sections,
+        'internal_stats': internal_stats,
+        'subject_stats': subject_stats,
     }
     
     return render(request, 'students/analytics_semester_details.html', context)
+
+
+# ==================== SECTION MANAGEMENT API VIEWS ====================
+
+@login_required
+@require_http_methods(["POST"])
+def assign_sections_api(request, department_id, batch_year):
+    """
+    Reassign sections (A, B, C, …) for all students in a batch, ordered by
+    roll number.  First SECTION_SIZE students → 'A', next SECTION_SIZE → 'B', …
+    """
+    from django.db import connection
+
+    user_profile = UserProfile.get_by_email(request.user.email)
+    if not user_profile or not user_profile.can_edit_students():
+        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
+
+    if user_profile.role == UserProfile.Role.HOD and str(user_profile.department_id) != str(department_id):
+        return JsonResponse({'success': False, 'error': 'You can only manage your own department.'}, status=403)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+    section_size = int(data.get('section_size', 60))
+    if section_size < 1:
+        section_size = 60
+
+    sql = f"""
+        UPDATE students s
+        SET section = chr(64 + CEIL(ranked.row_num / {section_size}.0)::int)
+        FROM (
+            SELECT id,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY department_id, academic_year_joining
+                       ORDER BY roll_number ASC
+                   ) AS row_num
+            FROM students
+            WHERE department_id = %s AND academic_year_joining = %s
+        ) ranked
+        WHERE s.id = ranked.id;
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql, [str(department_id), batch_year])
+        updated = cursor.rowcount
+
+    # Build the resulting section map to return to the frontend
+    section_map = {}
+    for s in Student.objects.filter(
+        department_id=department_id, academic_year_joining=batch_year
+    ).order_by('roll_number').values('roll_number', 'section'):
+        section_map[s['roll_number']] = s['section'] or ''
+
+    sections = sorted(set(v for v in section_map.values() if v))
+    return JsonResponse({
+        'success': True,
+        'updated': updated,
+        'section_size': section_size,
+        'sections': sections,
+        'section_map': section_map,
+    })
 
 
 # ==================== SUBJECT MANAGEMENT API VIEWS ====================
@@ -1239,6 +1461,96 @@ def marks_delete_api(request, result_id):
 
     result.delete()
     return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["POST"])
+def marks_bulk_delete_api(request, department_id, batch_year, semester_number):
+    """Bulk-delete all SubjectResult rows for a given subject / optional section."""
+    from students.models import Semester
+    user_profile = UserProfile.get_by_email(request.user.email)
+    if not user_profile or not user_profile.can_access_department_analytics():
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+    if user_profile.role == UserProfile.Role.HOD and str(user_profile.department_id) != str(department_id):
+        return JsonResponse({'error': 'Access restricted to your department.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+
+    subject_code = data.get('subject_code', '').strip()
+    section      = data.get('section', '').strip()
+
+    if not subject_code:
+        return JsonResponse({'error': 'subject_code is required.'}, status=400)
+
+    try:
+        department = Department.objects.get(id=department_id, is_active=True)
+        semester   = Semester.objects.get(number=semester_number)
+        subject    = Subject.objects.get(code=subject_code, semester=semester, department=department)
+    except Exception:
+        return JsonResponse({'error': 'Department, semester, or subject not found.'}, status=404)
+
+    students_qs = Student.objects.filter(
+        department_id=department_id,
+        academic_year_joining=batch_year,
+        is_active=True,
+    )
+    if section:
+        students_qs = students_qs.filter(section=section)
+
+    count, _ = SubjectResult.objects.filter(
+        student__in=students_qs,
+        subject=subject,
+    ).delete()
+
+    return JsonResponse({'success': True, 'deleted': count})
+
+
+@login_required
+@require_http_methods(["POST"])
+def end_sem_bulk_delete_api(request, department_id, batch_year, semester_number):
+    """Bulk-delete all EndSemesterResult rows for a given subject / optional section."""
+    from students.models import Semester
+    user_profile = UserProfile.get_by_email(request.user.email)
+    if not user_profile or not user_profile.can_access_department_analytics():
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+    if user_profile.role == UserProfile.Role.HOD and str(user_profile.department_id) != str(department_id):
+        return JsonResponse({'error': 'Access restricted to your department.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+
+    subject_code = data.get('subject_code', '').strip()
+    section      = data.get('section', '').strip()
+
+    if not subject_code:
+        return JsonResponse({'error': 'subject_code is required.'}, status=400)
+
+    try:
+        department = Department.objects.get(id=department_id, is_active=True)
+        semester   = Semester.objects.get(number=semester_number)
+        subject    = Subject.objects.get(code=subject_code, semester=semester, department=department)
+    except Exception:
+        return JsonResponse({'error': 'Department, semester, or subject not found.'}, status=404)
+
+    students_qs = Student.objects.filter(
+        department_id=department_id,
+        academic_year_joining=batch_year,
+        is_active=True,
+    )
+    if section:
+        students_qs = students_qs.filter(section=section)
+
+    count, _ = EndSemesterResult.objects.filter(
+        student__in=students_qs,
+        subject=subject,
+    ).delete()
+
+    return JsonResponse({'success': True, 'deleted': count})
 
 
 # ==================== END SEMESTER RESULT API VIEWS ====================

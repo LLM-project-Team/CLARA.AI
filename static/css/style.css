@@ -10,7 +10,7 @@
 }
 
 html {
-    font-size: 62.5%; /* 1rem = 10px */
+    font-size: 78.125%; /* 1rem = 12.5px — correct at 100% browser zoom */
 }
 
 body {
@@ -159,7 +159,7 @@ body {
 
 /* --- Sidebar --- */
 .sidebar {
-    width: 250px;
+    width: 220px;
     background-color: #2c3e50; /* Dark Navy */
     color: white;
     display: flex;
@@ -208,10 +208,10 @@ body {
 
 /* --- Main Content Area --- */
 .main-content {
-    margin-left: 250px; /* Push content to right of sidebar */
+    margin-left: 220px; /* Push content to right of sidebar */
     flex: 1;
     padding: 3rem;
-    width: calc(100% - 250px);
+    width: calc(100% - 220px);
 }
 
 .header-bar {
@@ -219,6 +219,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 4rem;
+    position: relative;
 }
 
 .welcome-text h2 {
@@ -229,6 +230,39 @@ body {
 .welcome-text p {
     font-size: 1.4rem;
     color: #7f8c8d;
+}
+
+/* --- Header Clock (top-right) --- */
+.header-clock {
+    position: absolute;
+    right: 5rem;
+
+    top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    color: #34495e;
+    font-size: 1.05rem;
+    z-index: 30;
+}
+.header-clock .clock-date {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+.header-clock .clock-time {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #2c3e50;
+}
+
+@media (max-width: 1024px) {
+    .header-clock { right: 1.5rem; top: 0.9rem; }
+}
+
+@media (max-width: 768px) {
+    .header-clock { display: none; }
 }
 
 /* --- AI Status Bar --- */
@@ -252,14 +286,14 @@ body {
     gap: 0.8rem;
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     color: #2c3e50;
-    padding: 1rem 2rem;
-    border-radius: 12px;
+    padding: 0.8rem 1.6rem;
+    border-radius: 10px;
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 700;
     text-align: center;
-    min-width: 180px;
-    min-height: 50px;
+    min-width: 148px;
+    min-height: 42px;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
     cursor: pointer;
@@ -364,11 +398,11 @@ body {
 }
 
 .status-dot {
-    height: 12px;
-    width: 12px;
+    height: 10px;
+    width: 10px;
     background-color: #2ecc71;
     border-radius: 50%;
-    box-shadow: 0 0 10px #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
 }
 
 .insight-action-btn {
@@ -396,8 +430,8 @@ body {
 /* --- Features Grid (Cards) --- */
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem;
 }
 
 /* Responsive design for system insight */
@@ -448,14 +482,14 @@ body {
 }
 
 .icon-container {
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     background-color: #fff9db;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem;
 }
 
 .icon-container i {
@@ -505,9 +539,9 @@ body {
 
 /* 1. HISTORY SIDEBAR (Left) */
 .history-sidebar {
-    width: 260px;
+    width: 220px;
     background-color: #f0f4f9; /* Gemini's light grey sidebar */
-    padding: 20px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     border-right: 1px solid #e0e0e0;
@@ -567,7 +601,7 @@ body {
 
 .chat-display {
     flex: 1;
-    padding: 40px;
+    padding: 32px;
     overflow-y: auto;
 }
 
@@ -604,7 +638,7 @@ body {
 
 /* 3. INPUT AREA (Bottom) */
 .input-wrapper {
-    padding: 20px 40px;
+    padding: 16px 32px;
     background: white;
 }
 

@@ -123,18 +123,19 @@ def _handle_chat(request):
             return JsonResponse({"type": "pdf_import", "success": False, "error": result["error"]})
 
         return JsonResponse({
-            "type":             "pdf_import",
-            "success":          True,
-            "summary":          result["summary"],
-            "subjects_created": result["subjects_created"],
-            "subjects_existed": result["subjects_existed"],
-            "rows_inserted":    result["rows_inserted"],
-            "rows_skipped":     result["rows_skipped"],
-            "skip_reasons":     result.get("skip_reasons", {}),
-            "mark_type":        result.get("mark_type", "internal"),
-            "internal_number":  result.get("internal_number", 1),
-            "pages_parsed":     result.get("pages_parsed", 1),
-            "_debug":           result.get("_debug", {}),
+            "type":                "pdf_import",
+            "success":             True,
+            "summary":             result["summary"],
+            "subjects_created":    [],                              # always empty now
+            "subjects_not_found":  result.get("subjects_not_found", []),
+            "subjects_existed":    result["subjects_existed"],
+            "rows_inserted":       result["rows_inserted"],
+            "rows_skipped":        result["rows_skipped"],
+            "skip_reasons":        result.get("skip_reasons", {}),
+            "mark_type":           result.get("mark_type", "internal"),
+            "internal_number":     result.get("internal_number", 1),
+            "pages_parsed":        result.get("pages_parsed", 1),
+            "_debug":              result.get("_debug", {}),
         })
 
     # ── Branch: NLPQ or Mutation ──────────────────────────────────────────────

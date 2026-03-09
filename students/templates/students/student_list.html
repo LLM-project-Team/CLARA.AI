@@ -33,20 +33,41 @@
         <i class="fa-solid fa-arrow-left"></i> Back to Batches
     </a>
     
-    <a href="{% url 'students:student_add_batch' department.id batch_year %}" style="
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: transform 0.2s, box-shadow 0.2s;
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(39, 174, 96, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-        <i class="fa-solid fa-plus"></i> Add Student
-    </a>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <!-- Assign Sections Button -->
+        <button id="assign-sections-btn" onclick="openAssignSectionsModal()" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        "
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(142,68,173,0.4)';" 
+        onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <i class="fa-solid fa-layer-group"></i> Assign Sections
+        </button>
+
+        <a href="{% url 'students:student_add_batch' department.id batch_year %}" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(39, 174, 96, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <i class="fa-solid fa-plus"></i> Add Student
+        </a>
+    </div>
 </div>
 
 <!-- Search & Filter Section -->
@@ -70,10 +91,20 @@
                 <option value="false" {% if hosteller_filter == 'false' %}selected{% endif %}>Day Scholars</option>
             </select>
         </div>
+        {% if available_sections %}
+        <div class="filter-group">
+            <select name="section">
+                <option value="">All Sections</option>
+                {% for sec in available_sections %}
+                <option value="{{ sec }}" {% if section_filter == sec %}selected{% endif %}>Section {{ sec }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
         <button type="submit" class="filter-btn">
             <i class="fa-solid fa-filter"></i> Apply
         </button>
-        {% if search_query or gender_filter or hosteller_filter %}
+        {% if search_query or gender_filter or hosteller_filter or section_filter %}
         <a href="{% url 'students:student_list' department.id batch_year %}" class="clear-btn">
             <i class="fa-solid fa-times"></i> Clear
         </a>
@@ -91,6 +122,7 @@
                 <th>Roll No</th>
                 <th>Student Name</th>
                 <th>Register No</th>
+                <th>Section</th>
                 <th>Gender</th>
                 <th>Mobile</th>
                 <th>Status</th>
@@ -108,7 +140,14 @@
                     </div>
                     <span>{{ student.student_name }}</span>
                 </td>
-                <td>{{ student.register_number|default:"-" }}</td>
+                <td>{{ student.registration_number|default:"-" }}</td>
+                <td>
+                    {% if student.section %}
+                    <span class="badge section-badge section-{{ student.section }}">{{ student.section }}</span>
+                    {% else %}
+                    <span style="color:#bdc3c7;">—</span>
+                    {% endif %}
+                </td>
                 <td>
                     <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">
                         {{ student.gender }}
@@ -140,10 +179,10 @@
         </span>
         <div class="pagination">
             {% if page_obj.has_previous %}
-            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
                 <i class="fa-solid fa-angles-left"></i>
             </a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
                 <i class="fa-solid fa-angle-left"></i>
             </a>
             {% endif %}
@@ -151,10 +190,10 @@
             <span class="page-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
             
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
                 <i class="fa-solid fa-angle-right"></i>
             </a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}" class="page-link">
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
                 <i class="fa-solid fa-angles-right"></i>
             </a>
             {% endif %}
@@ -522,5 +561,115 @@
 .back-link:hover {
     color: #2980b9;
 }
+
+/* ── Section Badges ───────────────────────────────────── */
+.section-badge {
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    min-width: 2.8rem;
+    text-align: center;
+}
+.section-A { background: #d5f5e3; color: #1e8449; }
+.section-B { background: #d6eaf8; color: #1a5276; }
+.section-C { background: #fdebd0; color: #935116; }
+.section-D { background: #f9ebea; color: #922b21; }
+
+/* ── Assign Sections Modal ────────────────────────────── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2.5rem;
+    min-width: 340px;
+    max-width: 420px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+}
+.modal-box h3 { font-size: 1.8rem; color: #2c3e50; margin-bottom: 0.5rem; }
+.modal-box p  { font-size: 1.3rem; color: #7f8c8d; margin-bottom: 1.5rem; }
+.modal-field  { margin-bottom: 1.5rem; }
+.modal-field label { display: block; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem; }
+.modal-field input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1.4rem; }
+.modal-actions { display: flex; gap: 1rem; justify-content: flex-end; }
+.btn-purple { background: #8e44ad; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.3rem; font-weight: 600; cursor: pointer; }
+.btn-cancel { background: #ecf0f1; color: #2c3e50; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.3rem; font-weight: 600; cursor: pointer; }
+#assign-result { margin-top: 1rem; font-size: 1.3rem; }
 </style>
+
+<!-- ── Assign Sections Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" id="assignSectionsModal">
+    <div class="modal-box">
+        <h3><i class="fa-solid fa-layer-group"></i> Assign Sections</h3>
+        <p>Students are sorted by roll number and divided into sections alphabetically (A, B, C, …).</p>
+        <div class="modal-field">
+            <label for="sectionSizeInput">Students per section</label>
+            <input type="number" id="sectionSizeInput" value="60" min="1" max="300">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeAssignSectionsModal()">Cancel</button>
+            <button class="btn-purple" id="confirmAssignBtn" onclick="doAssignSections()">
+                <i class="fa-solid fa-check"></i> Assign
+            </button>
+        </div>
+        <div id="assign-result"></div>
+    </div>
+</div>
+
+<script>
+const ASSIGN_URL = "{% url 'students:assign_sections' department.id batch_year %}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+function openAssignSectionsModal() {
+    document.getElementById('assignSectionsModal').classList.add('open');
+    document.getElementById('assign-result').innerHTML = '';
+}
+function closeAssignSectionsModal() {
+    document.getElementById('assignSectionsModal').classList.remove('open');
+}
+
+async function doAssignSections() {
+    const sectionSize = parseInt(document.getElementById('sectionSizeInput').value) || 60;
+    const btn = document.getElementById('confirmAssignBtn');
+    const resultEl = document.getElementById('assign-result');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Assigning…';
+    resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(ASSIGN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ section_size: sectionSize }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+            const secs = data.sections.map(s =>
+                `<span class="badge section-badge section-${s}" style="margin-right:4px">${s}</span>`
+            ).join('');
+            resultEl.innerHTML = `<span style="color:#27ae60">✅ Assigned ${data.updated} students into sections: ${secs}</span>`;
+            setTimeout(() => { closeAssignSectionsModal(); location.reload(); }, 1800);
+        } else {
+            resultEl.innerHTML = `<span style="color:#e74c3c">⚠️ ${data.error}</span>`;
+        }
+    } catch (e) {
+        resultEl.innerHTML = `<span style="color:#e74c3c">⚠️ Network error.</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Assign';
+    }
+}
+
+// Close modal on overlay click
+document.getElementById('assignSectionsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAssignSectionsModal();
+});
+</script>
 {% endblock %}

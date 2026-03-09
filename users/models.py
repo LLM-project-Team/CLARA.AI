@@ -37,9 +37,26 @@ class CustomUserManager(BaseUserManager):               #used mostly by the deve
             raise ValueError("Please Enter a Proper Email")
 
         email=self.normalize_email(email)
-        user = self.model(email=email,**extra_fields)
+        # ensure a username exists (some parts of the system expect a non-null username)
+        username = extra_fields.get('username')
+        if not username:
+            username = email.split('@')[0]
+            extra_fields['username'] = username
+
+        # try to make username unique if collision occurs
+        from django.db import IntegrityError
+        from uuid import uuid4
+
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        user.save()
+        try:
+            user.save()
+        except IntegrityError:
+            # append short uuid suffix and retry
+            extra_fields['username'] = f"{username}_{str(uuid4())[:8]}"
+            user = self.model(email=email, **extra_fields)
+            user.set_password(password)
+            user.save()
         return user
 
     def create_superuser(self,email,password,**extra_fields):
