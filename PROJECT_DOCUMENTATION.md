@@ -1,4 +1,4 @@
-# DaDDy-SIET: LLM-Powered Academic Administrator
+# CLARA.AI: LLM-Powered Academic Administrator
 
 > **An AI-Driven Intelligent Academic Administration Platform**
 > Sri Shakthi Institute of Engineering and Technology, Coimbatore, India
@@ -26,7 +26,7 @@
 
 ## 1. Executive Summary
 
-**DaDDy-SIET** is a full-stack, AI-powered academic administration platform built on Django that automates and augments three critical institutional workflows:
+**CLARA.AI** is a full-stack, AI-powered academic administration platform built on Django that automates and augments three critical institutional workflows:
 
 | Capability | Description |
 |---|---|
@@ -47,7 +47,7 @@ Indian engineering colleges face several administrative bottlenecks:
 - **Academic performance analysis** relies on spreadsheets with no natural language interface — HODs and Deans must manually compute pass rates, toppers, and at-risk students.
 - **Access control** across administrative roles is typically ad-hoc, with no unified system governing who can view/edit what.
 
-DaDDy-SIET addresses all four problems through a single integrated platform.
+CLARA.AI addresses all four problems through a single integrated platform.
 
 ---
 
@@ -960,6 +960,6 @@ OLLAMA_LIGHT_MODEL=llama3.2:3b
 
 ---
 
-> **DaDDy-SIET** — *Data-Driven Decision Support for Academic Administration, powered by Local LLMs.*
+> **CLARA.AI** — *Comprehensive LLM-powered Academic Resource Administrator.*
 >
-> Repository: [LLM-project-Team/DaDDy-SIET](https://github.com/LLM-project-Team/DaDDy-SIET)
+> Repository: [LLM-project-Team/CLARA](https://github.com/LLM-project-Team/CLARA.AI)
