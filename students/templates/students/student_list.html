@@ -5,107 +5,74 @@
 
 {% block content %}
 <!-- Breadcrumb Navigation -->
-<div class="breadcrumb-nav">
-    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:department_list' %}">Departments</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:batch_list' department.id %}">{{ department.name }}</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <span>{{ batch_year }}</span>
-</div>
+<nav class="mb-8 flex items-center gap-2 text-sm">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 transition hover:text-indigo-500"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:department_list' %}" class="text-slate-400 transition hover:text-indigo-500">Departments</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:batch_list' department.id %}" class="text-slate-400 transition hover:text-indigo-500">{{ department.name }}</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <span class="font-medium text-slate-600">{{ batch_year }}</span>
+</nav>
 
 <!-- User Info Bar -->
-<div class="ai-status">
-    <div class="status-dot"></div>
-    <span style="font-size: 1.4rem; color: #2c3e50;">
-        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
-        <span style="color: #7f8c8d;">{{ user_role }}</span>
-    </span>
-    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+<div class="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-4 shadow-sm">
+    <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]"></span>
+    <span class="text-sm font-bold text-slate-800">{{ user_name }}</span>
+    <span class="text-sm text-slate-400">|</span>
+    <span class="text-sm text-slate-500">{{ user_role }}</span>
+    <span class="ml-auto flex items-center gap-2 text-sm text-slate-400">
         <i class="fa-solid fa-user-graduate"></i> {{ total_count }} Students
     </span>
 </div>
 
 <!-- Action Buttons Row -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <a href="{% url 'students:batch_list' department.id %}" class="back-button" style="margin: 0;">
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <a href="{% url 'students:batch_list' department.id %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition-all hover:border-indigo-300 hover:text-indigo-600">
         <i class="fa-solid fa-arrow-left"></i> Back to Batches
     </a>
-    
-    <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <!-- Assign Sections Button -->
-        <button id="assign-sections-btn" onclick="openAssignSectionsModal()" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        "
-        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(142,68,173,0.4)';" 
-        onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+
+    <div class="flex items-center gap-3">
+        <button id="assign-sections-btn" onclick="openAssignSectionsModal()" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30">
             <i class="fa-solid fa-layer-group"></i> Assign Sections
         </button>
 
-        <a href="{% url 'students:student_add_batch' department.id batch_year %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(39, 174, 96, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+        <a href="{% url 'students:student_add_batch' department.id batch_year %}" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30">
             <i class="fa-solid fa-plus"></i> Add Student
         </a>
     </div>
 </div>
 
 <!-- Search & Filter Section -->
-<div class="filter-section">
-    <form method="GET" class="filter-form">
-        <div class="search-box">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" name="search" placeholder="Search by name, roll no, register no..." value="{{ search_query }}">
+<div class="mb-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <form method="GET" class="flex flex-wrap items-center gap-3">
+        <div class="flex min-w-[250px] flex-1 items-center gap-3 rounded-xl border-2 border-transparent bg-slate-50 px-4 py-2.5 transition focus-within:border-indigo-300 focus-within:bg-white">
+            <i class="fa-solid fa-search text-slate-400"></i>
+            <input type="text" name="search" placeholder="Search by name, roll no, register no..." value="{{ search_query }}" class="flex-1 border-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400">
         </div>
-        <div class="filter-group">
-            <select name="gender">
-                <option value="">All Genders</option>
-                <option value="MALE" {% if gender_filter == 'MALE' %}selected{% endif %}>Male</option>
-                <option value="FEMALE" {% if gender_filter == 'FEMALE' %}selected{% endif %}>Female</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <select name="hosteller">
-                <option value="">All Students</option>
-                <option value="true" {% if hosteller_filter == 'true' %}selected{% endif %}>Hostellers</option>
-                <option value="false" {% if hosteller_filter == 'false' %}selected{% endif %}>Day Scholars</option>
-            </select>
-        </div>
+        <select name="gender" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition focus:border-indigo-300 focus:outline-none">
+            <option value="">All Genders</option>
+            <option value="MALE" {% if gender_filter == 'MALE' %}selected{% endif %}>Male</option>
+            <option value="FEMALE" {% if gender_filter == 'FEMALE' %}selected{% endif %}>Female</option>
+        </select>
+        <select name="hosteller" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition focus:border-indigo-300 focus:outline-none">
+            <option value="">All Students</option>
+            <option value="true" {% if hosteller_filter == 'true' %}selected{% endif %}>Hostellers</option>
+            <option value="false" {% if hosteller_filter == 'false' %}selected{% endif %}>Day Scholars</option>
+        </select>
         {% if available_sections %}
-        <div class="filter-group">
-            <select name="section">
-                <option value="">All Sections</option>
-                {% for sec in available_sections %}
-                <option value="{{ sec }}" {% if section_filter == sec %}selected{% endif %}>Section {{ sec }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <select name="section" class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition focus:border-indigo-300 focus:outline-none">
+            <option value="">All Sections</option>
+            {% for sec in available_sections %}
+            <option value="{{ sec }}" {% if section_filter == sec %}selected{% endif %}>Section {{ sec }}</option>
+            {% endfor %}
+        </select>
         {% endif %}
-        <button type="submit" class="filter-btn">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-600">
             <i class="fa-solid fa-filter"></i> Apply
         </button>
         {% if search_query or gender_filter or hosteller_filter or section_filter %}
-        <a href="{% url 'students:student_list' department.id batch_year %}" class="clear-btn">
+        <a href="{% url 'students:student_list' department.id batch_year %}" class="inline-flex items-center gap-1.5 text-sm font-medium text-red-500 transition hover:text-red-600">
             <i class="fa-solid fa-times"></i> Clear
         </a>
         {% endif %}
@@ -113,56 +80,64 @@
 </div>
 
 <!-- Students Table -->
-<div class="table-container">
+<div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
     {% if students %}
-    <table class="data-table">
+    <div class="overflow-x-auto">
+    <table class="w-full">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>Roll No</th>
-                <th>Student Name</th>
-                <th>Register No</th>
-                <th>Section</th>
-                <th>Gender</th>
-                <th>Mobile</th>
-                <th>Status</th>
-                <th>Actions</th>
+            <tr class="border-b-2 border-slate-100 bg-slate-50/80">
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">#</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Roll No</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Student Name</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Register No</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Section</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Gender</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Mobile</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                <th class="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-100">
             {% for student in students %}
-            <tr>
-                <td class="row-num">{{ forloop.counter }}</td>
-                <td><span class="badge badge-secondary">{{ student.roll_number|default:"-" }}</span></td>
-                <td class="student-name">
-                    <div class="avatar {% if student.gender == 'MALE' %}male{% else %}female{% endif %}">
-                        <i class="fa-solid fa-{% if student.gender == 'MALE' %}mars{% else %}venus{% endif %}"></i>
+            <tr class="transition hover:bg-slate-50/60">
+                <td class="px-5 py-4 text-sm text-slate-400">{{ forloop.counter }}</td>
+                <td class="px-5 py-4"><span class="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ student.roll_number|default:"-" }}</span></td>
+                <td class="px-5 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-full {% if student.gender == 'MALE' %}bg-blue-50 text-blue-500{% else %}bg-pink-50 text-pink-500{% endif %}">
+                            <i class="fa-solid fa-{% if student.gender == 'MALE' %}mars{% else %}venus{% endif %} text-xs"></i>
+                        </div>
+                        <span class="text-sm font-medium text-slate-800">{{ student.student_name }}</span>
                     </div>
-                    <span>{{ student.student_name }}</span>
                 </td>
-                <td>{{ student.registration_number|default:"-" }}</td>
-                <td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.registration_number|default:"-" }}</td>
+                <td class="px-5 py-4">
                     {% if student.section %}
-                    <span class="badge section-badge section-{{ student.section }}">{{ student.section }}</span>
+                    <span class="inline-block min-w-[2rem] rounded-full px-3 py-1 text-center text-xs font-bold
+                        {% if student.section == 'A' %}bg-emerald-50 text-emerald-700
+                        {% elif student.section == 'B' %}bg-blue-50 text-blue-700
+                        {% elif student.section == 'C' %}bg-amber-50 text-amber-700
+                        {% elif student.section == 'D' %}bg-rose-50 text-rose-700
+                        {% else %}bg-slate-100 text-slate-600{% endif %}">{{ student.section }}</span>
                     {% else %}
-                    <span style="color:#bdc3c7;">—</span>
+                    <span class="text-slate-300">—</span>
                     {% endif %}
                 </td>
-                <td>
-                    <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">
+                <td class="px-5 py-4">
+                    <span class="inline-block rounded-full px-3 py-1 text-xs font-medium {% if student.gender == 'MALE' %}bg-blue-50 text-blue-600{% else %}bg-pink-50 text-pink-600{% endif %}">
                         {{ student.gender }}
                     </span>
                 </td>
-                <td>{{ student.mobile_number|default:"-" }}</td>
-                <td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ student.mobile_number|default:"-" }}</td>
+                <td class="px-5 py-4">
                     {% if student.hosteller %}
-                    <span class="badge badge-green">Hosteller</span>
+                    <span class="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600">Hosteller</span>
                     {% else %}
-                    <span class="badge badge-orange">Day Scholar</span>
+                    <span class="inline-block rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600">Day Scholar</span>
                     {% endif %}
                 </td>
-                <td>
-                    <a href="{% url 'students:student_detail' student.id %}" class="action-btn">
+                <td class="px-5 py-4">
+                    <a href="{% url 'students:student_detail' student.id %}" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100">
                         <i class="fa-solid fa-eye"></i> View
                     </a>
                 </td>
@@ -170,44 +145,45 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Pagination -->
     {% if page_obj.paginator.num_pages > 1 %}
-    <div class="pagination-container">
-        <span class="page-info">
+    <div class="flex flex-wrap items-center justify-between border-t border-slate-100 px-6 py-4">
+        <span class="text-sm text-slate-400">
             Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
         </span>
-        <div class="pagination">
+        <div class="flex items-center gap-1.5">
             {% if page_obj.has_previous %}
-            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
-                <i class="fa-solid fa-angles-left"></i>
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-indigo-500 hover:text-white">
+                <i class="fa-solid fa-angles-left text-xs"></i>
             </a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
-                <i class="fa-solid fa-angle-left"></i>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-indigo-500 hover:text-white">
+                <i class="fa-solid fa-angle-left text-xs"></i>
             </a>
             {% endif %}
-            
-            <span class="page-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-            
+
+            <span class="px-4 text-sm font-semibold text-slate-700">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
-                <i class="fa-solid fa-angle-right"></i>
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-indigo-500 hover:text-white">
+                <i class="fa-solid fa-angle-right text-xs"></i>
             </a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="page-link">
-                <i class="fa-solid fa-angles-right"></i>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if gender_filter %}&gender={{ gender_filter }}{% endif %}{% if hosteller_filter %}&hosteller={{ hosteller_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}" class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-indigo-500 hover:text-white">
+                <i class="fa-solid fa-angles-right text-xs"></i>
             </a>
             {% endif %}
         </div>
     </div>
     {% endif %}
-    
+
     {% else %}
-    <div class="empty-state">
-        <i class="fa-solid fa-search"></i>
-        <h3>No Students Found</h3>
-        <p>{% if search_query %}No students match your search criteria.{% else %}There are no students in this batch.{% endif %}</p>
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <i class="fa-solid fa-search mb-4 text-5xl text-slate-200"></i>
+        <h3 class="text-xl font-bold text-slate-800">No Students Found</h3>
+        <p class="mt-2 text-sm text-slate-500">{% if search_query %}No students match your search criteria.{% else %}There are no students in this batch.{% endif %}</p>
         {% if search_query %}
-        <a href="{% url 'students:student_list' department.id batch_year %}" class="back-link">
+        <a href="{% url 'students:student_list' department.id batch_year %}" class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-500 transition hover:text-indigo-600">
             <i class="fa-solid fa-times"></i> Clear Search
         </a>
         {% endif %}
@@ -215,411 +191,22 @@
     {% endif %}
 </div>
 
-<style>
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-}
-
-.breadcrumb-nav a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.breadcrumb-nav a:hover {
-    color: #2980b9;
-}
-
-.breadcrumb-nav i.fa-chevron-right {
-    font-size: 1rem;
-    color: #bdc3c7;
-}
-
-.breadcrumb-nav span {
-    color: #7f8c8d;
-}
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 1rem 2rem;
-    background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    color: #2c3e50;
-    font-size: 1.4rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    margin-bottom: 2rem;
-}
-
-.back-button:hover {
-    background: #3498db;
-    border-color: #3498db;
-    color: white;
-}
-
-/* Filter Section */
-.filter-section {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
-
-.filter-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.search-box {
-    flex: 1;
-    min-width: 250px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: #f8f9fa;
-    padding: 1rem 1.5rem;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    transition: border-color 0.3s;
-}
-
-.search-box:focus-within {
-    border-color: #3498db;
-}
-
-.search-box i {
-    color: #95a5a6;
-    font-size: 1.6rem;
-}
-
-.search-box input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 1.4rem;
-    color: #2c3e50;
-}
-
-.search-box input::placeholder {
-    color: #bdc3c7;
-}
-
-.filter-group select {
-    padding: 1rem 1.5rem;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    font-size: 1.4rem;
-    color: #2c3e50;
-    background: white;
-    cursor: pointer;
-    min-width: 150px;
-}
-
-.filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 1rem 2rem;
-    background: #3498db;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.4rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.filter-btn:hover {
-    background: #2980b9;
-}
-
-.clear-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    color: #e74c3c;
-    text-decoration: none;
-    font-size: 1.4rem;
-    transition: color 0.3s;
-}
-
-.clear-btn:hover {
-    color: #c0392b;
-}
-
-/* Table Styles */
-.table-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    overflow: hidden;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table thead {
-    background: #f8f9fa;
-}
-
-.data-table th {
-    padding: 1.5rem;
-    text-align: left;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #7f8c8d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #ecf0f1;
-}
-
-.data-table td {
-    padding: 1.5rem;
-    font-size: 1.4rem;
-    color: #2c3e50;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.data-table tbody tr:hover {
-    background: #f8f9fa;
-}
-
-.row-num {
-    color: #95a5a6;
-    font-weight: 500;
-}
-
-.student-name {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.avatar {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-}
-
-.avatar.male {
-    background: #e3f2fd;
-    color: #2196f3;
-}
-
-.avatar.female {
-    background: #fce4ec;
-    color: #e91e63;
-}
-
-.badge {
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 1.2rem;
-    font-weight: 500;
-}
-
-.badge-secondary {
-    background: #ecf0f1;
-    color: #7f8c8d;
-}
-
-.badge-blue {
-    background: #e3f2fd;
-    color: #2196f3;
-}
-
-.badge-pink {
-    background: #fce4ec;
-    color: #e91e63;
-}
-
-.badge-green {
-    background: #e8f5e9;
-    color: #4caf50;
-}
-
-.badge-orange {
-    background: #fff3e0;
-    color: #ff9800;
-}
-
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.8rem 1.5rem;
-    background: #3498db;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 1.2rem;
-    transition: background 0.3s;
-}
-
-.action-btn:hover {
-    background: #2980b9;
-}
-
-/* Pagination */
-.pagination-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2rem;
-    border-top: 1px solid #ecf0f1;
-}
-
-.page-info {
-    font-size: 1.3rem;
-    color: #7f8c8d;
-}
-
-.pagination {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.page-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #f8f9fa;
-    color: #2c3e50;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s;
-}
-
-.page-link:hover {
-    background: #3498db;
-    color: white;
-}
-
-.page-current {
-    padding: 0 1.5rem;
-    font-size: 1.4rem;
-    font-weight: 500;
-    color: #2c3e50;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 6rem 2rem;
-}
-
-.empty-state i {
-    font-size: 5rem;
-    color: #bdc3c7;
-    margin-bottom: 2rem;
-}
-
-.empty-state h3 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-
-.empty-state p {
-    font-size: 1.4rem;
-    color: #7f8c8d;
-    margin-bottom: 2rem;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #3498db;
-    text-decoration: none;
-    font-size: 1.4rem;
-}
-
-.back-link:hover {
-    color: #2980b9;
-}
-
-/* ── Section Badges ───────────────────────────────────── */
-.section-badge {
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    min-width: 2.8rem;
-    text-align: center;
-}
-.section-A { background: #d5f5e3; color: #1e8449; }
-.section-B { background: #d6eaf8; color: #1a5276; }
-.section-C { background: #fdebd0; color: #935116; }
-.section-D { background: #f9ebea; color: #922b21; }
-
-/* ── Assign Sections Modal ────────────────────────────── */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal-box {
-    background: #fff;
-    border-radius: 12px;
-    padding: 2.5rem;
-    min-width: 340px;
-    max-width: 420px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
-}
-.modal-box h3 { font-size: 1.8rem; color: #2c3e50; margin-bottom: 0.5rem; }
-.modal-box p  { font-size: 1.3rem; color: #7f8c8d; margin-bottom: 1.5rem; }
-.modal-field  { margin-bottom: 1.5rem; }
-.modal-field label { display: block; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem; }
-.modal-field input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1.4rem; }
-.modal-actions { display: flex; gap: 1rem; justify-content: flex-end; }
-.btn-purple { background: #8e44ad; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.3rem; font-weight: 600; cursor: pointer; }
-.btn-cancel { background: #ecf0f1; color: #2c3e50; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.3rem; font-weight: 600; cursor: pointer; }
-#assign-result { margin-top: 1rem; font-size: 1.3rem; }
-</style>
-
-<!-- ── Assign Sections Modal ─────────────────────────────────────── -->
-<div class="modal-overlay" id="assignSectionsModal">
-    <div class="modal-box">
-        <h3><i class="fa-solid fa-layer-group"></i> Assign Sections</h3>
-        <p>Students are sorted by roll number and divided into sections alphabetically (A, B, C, …).</p>
-        <div class="modal-field">
-            <label for="sectionSizeInput">Students per section</label>
-            <input type="number" id="sectionSizeInput" value="60" min="1" max="300">
+<!-- Assign Sections Modal -->
+<div class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 backdrop-blur-sm" id="assignSectionsModal">
+    <div class="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-2xl">
+        <h3 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-layer-group mr-2 text-violet-500"></i>Assign Sections</h3>
+        <p class="mt-1 text-sm text-slate-500">Students are sorted by roll number and divided into sections alphabetically (A, B, C, …).</p>
+        <div class="mt-6">
+            <label for="sectionSizeInput" class="mb-1.5 block text-sm font-semibold text-slate-700">Students per section</label>
+            <input type="number" id="sectionSizeInput" value="60" min="1" max="300" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
         </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeAssignSectionsModal()">Cancel</button>
-            <button class="btn-purple" id="confirmAssignBtn" onclick="doAssignSections()">
-                <i class="fa-solid fa-check"></i> Assign
+        <div class="mt-6 flex justify-end gap-3">
+            <button class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" onclick="closeAssignSectionsModal()">Cancel</button>
+            <button class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:bg-violet-700" id="confirmAssignBtn" onclick="doAssignSections()">
+                <i class="fa-solid fa-check mr-1"></i> Assign
             </button>
         </div>
-        <div id="assign-result"></div>
+        <div id="assign-result" class="mt-4 text-sm"></div>
     </div>
 </div>
 
@@ -628,11 +215,15 @@ const ASSIGN_URL = "{% url 'students:assign_sections' department.id batch_year %
 const CSRF_TOKEN = "{{ csrf_token }}";
 
 function openAssignSectionsModal() {
-    document.getElementById('assignSectionsModal').classList.add('open');
+    const modal = document.getElementById('assignSectionsModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
     document.getElementById('assign-result').innerHTML = '';
 }
 function closeAssignSectionsModal() {
-    document.getElementById('assignSectionsModal').classList.remove('open');
+    const modal = document.getElementById('assignSectionsModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
 async function doAssignSections() {
@@ -652,22 +243,21 @@ async function doAssignSections() {
         const data = await resp.json();
         if (data.success) {
             const secs = data.sections.map(s =>
-                `<span class="badge section-badge section-${s}" style="margin-right:4px">${s}</span>`
+                `<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold bg-violet-50 text-violet-700 mr-1">${s}</span>`
             ).join('');
-            resultEl.innerHTML = `<span style="color:#27ae60">✅ Assigned ${data.updated} students into sections: ${secs}</span>`;
+            resultEl.innerHTML = `<span class="text-emerald-600">✅ Assigned ${data.updated} students into sections: ${secs}</span>`;
             setTimeout(() => { closeAssignSectionsModal(); location.reload(); }, 1800);
         } else {
-            resultEl.innerHTML = `<span style="color:#e74c3c">⚠️ ${data.error}</span>`;
+            resultEl.innerHTML = `<span class="text-red-500">⚠️ ${data.error}</span>`;
         }
     } catch (e) {
-        resultEl.innerHTML = `<span style="color:#e74c3c">⚠️ Network error.</span>`;
+        resultEl.innerHTML = `<span class="text-red-500">⚠️ Network error.</span>`;
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Assign';
     }
 }
 
-// Close modal on overlay click
 document.getElementById('assignSectionsModal').addEventListener('click', function(e) {
     if (e.target === this) closeAssignSectionsModal();
 });

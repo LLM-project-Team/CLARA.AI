@@ -3,141 +3,43 @@
 {% block page_title %}Department Analytics - {{ department.name }}{% endblock %}
 {% block page_subtitle %}Batches in {{ department.name }} department{% endblock %}
 
-{% block extra_css %}
-<style>
-    .breadcrumb {
-        background: #f8f9fa;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-        font-size: 1.1rem;
-    }
-
-    .breadcrumb a {
-        color: #667eea;
-        text-decoration: none;
-    }
-
-    .breadcrumb a:hover {
-        text-decoration: underline;
-    }
-
-    .breadcrumb .current {
-        color: #2c3e50;
-        font-weight: 600;
-    }
-
-    .batch-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-
-    .batch-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid #ecf0f1;
-    }
-
-    .batch-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .batch-card h3 {
-        font-size: 1.8rem;
-        color: #2c3e50;
-        margin-bottom: 1rem;
-        font-weight: 600;
-    }
-
-    .batch-stats {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .student-count {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #667eea;
-    }
-
-    .student-label {
-        color: #7f8c8d;
-        font-size: 1.1rem;
-    }
-
-    .view-analytics-btn {
-        display: inline-block;
-        padding: 0.8rem 1.5rem;
-        background: #667eea;
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        transition: background 0.3s ease;
-        width: 100%;
-        text-align: center;
-    }
-
-    .view-analytics-btn:hover {
-        background: #5a67d8;
-        color: white;
-    }
-
-    .no-batches {
-        text-align: center;
-        padding: 3rem;
-        color: #7f8c8d;
-        font-size: 1.2rem;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 
-    <!-- Breadcrumb Navigation -->
-    <div class="breadcrumb">
-        <a href="{% url 'pages:home' %}">Home</a> &gt;
-        <a href="{% url 'students:academic_analytics' %}">Academic Analytics</a> &gt;
-        <span class="current">{{ department.name }}</span>
-    </div>
+    <!-- Breadcrumb -->
+    <nav class="mb-8 flex items-center gap-2 text-sm flex-wrap">
+        <a href="{% url 'pages:home' %}" class="text-slate-400 hover:text-indigo-500 transition">Home</a>
+        <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+        <a href="{% url 'students:academic_analytics' %}" class="text-slate-400 hover:text-indigo-500 transition">Academic Analytics</a>
+        <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+        <span class="text-slate-600 font-medium">{{ department.name }}</span>
+    </nav>
 
     <!-- Department Header -->
-    <div style="text-align: center; margin-bottom: 3rem;">
-        <h1>{{ department.name }} Department</h1>
-        <p>Choose a batch to view detailed semester analytics</p>
+    <div class="mb-8 text-center">
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">{{ department.name }} Department</h1>
+        <p class="mt-1 text-sm text-slate-400">Choose a batch to view detailed semester analytics</p>
     </div>
 
     <!-- Batch Cards -->
     {% if batches_data %}
-    <div class="batch-grid">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {% for batch in batches_data %}
-        <div class="batch-card">
-            <h3>Batch {{ batch.batch_year }}</h3>
-            <div class="batch-stats">
-                <div>
-                    <div class="student-count">{{ batch.student_count }}</div>
-                    <div class="student-label">Students</div>
-                </div>
+        <div class="overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Batch {{ batch.batch_year }}</h3>
+            <div class="my-4">
+                <span class="block text-3xl font-extrabold text-indigo-600">{{ batch.student_count }}</span>
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Students</span>
             </div>
-            <a href="{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}" class="view-analytics-btn">
+            <a href="{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}" class="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-500/30">
                 <i class="fa-solid fa-chart-line"></i> View Semester Analytics
             </a>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="no-batches">
-        <i class="fa-solid fa-info-circle" style="font-size: 3rem; color: #bdc3c7; margin-bottom: 1rem;"></i>
-        <p>No batches found for this department.</p>
+    <div class="flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+        <i class="fa-solid fa-info-circle mb-4 text-5xl text-slate-200"></i>
+        <p class="text-sm text-slate-400">No batches found for this department.</p>
     </div>
     {% endif %}
 

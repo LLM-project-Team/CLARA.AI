@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block page_title %}Welcome, {{ user_name }}.{% endblock %}
 {% block page_subtitle %}Here is your academic overview for today.{% endblock %}
@@ -6,145 +6,183 @@
 {% block content %}
 
     {% if can_generate_circular and system_insight.has_insight %}
-    <div class="ai-status">
-        <a href="{% url 'circular_gen' %}?auto_holiday={{ system_insight.auto_holiday_param }}" class="insight-generate-btn">
-            <i class="fa-solid fa-magic-wand-sparkles"></i>
-            <span>Generate Now</span>
-        </a>
-        <div class="insight-content">
-            <div class="status-dot"></div>
-            <div>
-                <strong style="font-size: 1.4rem; color: #2d3436;">System Insight:</strong>
-                <span style="font-size: 1.4rem; color: #636e72;"> {{ system_insight.insight_text }}</span>
+    <!-- â”€â”€ AI System Insight Banner (active) â”€â”€ -->
+    <div class="group relative mb-5 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+        <div class="absolute left-0 top-0 h-full w-1 bg-indigo-500"></div>
+        <div class="flex flex-wrap items-center gap-4 px-8 py-5 md:gap-6">
+            <div class="flex flex-shrink-0 items-center gap-3">
+                <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]"></span>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400">System Insight</span>
             </div>
+            <div class="min-w-0 flex-1 text-sm text-slate-600">{{ system_insight.insight_text }}</div>
+            <a href="{% url 'circular_gen' %}?auto_holiday={{ system_insight.auto_holiday_param }}"
+               class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-500/30">
+                <i class="fa-solid fa-magic-wand-sparkles"></i>
+                <span>Generate Now</span>
+            </a>
         </div>
     </div>
     {% elif can_generate_circular %}
-    <div class="ai-status">
-        <div class="status-dot" style="background-color: #95a5a6;"></div>
-        <div>
-            <strong style="font-size: 1.4rem; color: #2d3436;">System Insight:</strong>
-            <span style="font-size: 1.4rem; color: #636e72;"> {{ system_insight.insight_text }}</span>
+    <!-- â”€â”€ AI System Insight Banner (idle) â”€â”€ -->
+    <div class="mb-5 overflow-hidden rounded-3xl border border-slate-100 bg-white">
+        <div class="flex items-center gap-4 px-8 py-5">
+            <span class="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full bg-slate-300"></span>
+            <div class="text-sm text-slate-500">
+                <strong class="font-semibold text-slate-700">System Insight</strong>&nbsp;&nbsp;{{ system_insight.insight_text }}
+            </div>
         </div>
     </div>
     {% endif %}
 
-    <div class="features-grid">
+    <!-- â”€â”€ Hero Section (asymmetrical) â”€â”€ -->
+    <div class="relative mb-6 overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 md:p-8">
+        <!-- Soft blurred gradient background -->
+        <div class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-300 to-teal-200 opacity-20 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-gradient-to-tr from-violet-300 to-rose-200 opacity-15 blur-3xl"></div>
 
-        <!-- AI Circular Generator - PRINCIPAL & DEAN only -->
-        {% if can_generate_circular %}
-        <div class="feature-card" onclick="window.location.href='{% url 'circular_gen' %}'">
-            <div class="icon-container">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <div class="relative grid items-center gap-8 md:grid-cols-2">
+            <div>
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+                    Your academic<br>
+                    <span class="bg-gradient-to-r from-indigo-600 to-teal-500 bg-clip-text text-transparent">command center.</span>
+                </h2>
+                <p class="mt-4 max-w-md text-base leading-relaxed text-slate-500">
+                    Manage circulars, staff, students, and analytics â€” all from one intelligent dashboard.
+                </p>
             </div>
-            <h3>AI Circular Generator</h3>
-            <p>Automatically draft, verify, and distribute official circulars for upcoming holidays and events.</p>
-            <div class="card-btn">
-                Create New Circular <i class="fa-solid fa-arrow-right"></i>
+            <div class="hidden items-center justify-center md:flex">
+                <div class="flex h-32 w-32 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-50 to-teal-50">
+                    <i class="fa-solid fa-chart-mixed text-5xl text-indigo-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- â”€â”€ Bento Feature Grid â”€â”€ -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+        <!-- AI Circular Generator -->
+        {% if can_generate_circular %}
+        <div onclick="window.location.href='{% url 'circular_gen' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50">
+                <i class="fa-solid fa-wand-magic-sparkles text-xl text-indigo-500"></i>
+            </div>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">AI Circular Generator</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Automatically draft, verify, and distribute official circulars for upcoming holidays and events.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-indigo-500 transition-all group-hover:gap-3">
+                Create New Circular <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}
 
         <!-- AI Features - PRINCIPAL & DEAN only -->
         {% if can_use_ai_features %}
-        <div class="feature-card" onclick="window.location.href='{% url 'students:academic_analytics' %}'">
-            <div class="icon-container" style="background-color: #e3f2fd;">
-                <i class="fa-solid fa-chart-pie" style="color: #2196f3;"></i>
+        <div onclick="window.location.href='{% url 'students:academic_analytics' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50">
+                <i class="fa-solid fa-chart-pie text-xl text-blue-500"></i>
             </div>
-            <h3>Academic Analytics</h3>
-            <p>Semester-wise performance and marks analytics.</p>
-            <div class="card-btn" style="color: #2196f3;">
-                View Departments <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Academic Analytics</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Semester-wise performance and marks analytics.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-500 transition-all group-hover:gap-3">
+                View Departments <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
 
-        <div class="feature-card">
-            <div class="icon-container" style="background-color: #ffebee;">
-                <i class="fa-solid fa-envelope-open-text" style="color: #e91e63;"></i>
+        <div class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-pink-50">
+                <i class="fa-solid fa-envelope-open-text text-xl text-pink-500"></i>
             </div>
-            <h3>Staff Communication</h3>
-            <p>Manage internal memos and track read receipts from department heads.</p>
-            <div class="card-btn" style="color: #e91e63;">
-                Manage Emails <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Staff Communication</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Manage internal memos and track read receipts from department heads.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-pink-500 transition-all group-hover:gap-3">
+                Manage Emails <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}
 
         <!-- User Management - ADMIN only -->
         {% if can_manage_users %}
-        <div class="feature-card" onclick="window.location.href='{% url 'users:user_management' %}'">
-            <div class="icon-container" style="background-color: #fff3e0;">
-                <i class="fa-solid fa-users-gear" style="color: #ff9800;"></i>
+        <div onclick="window.location.href='{% url 'users:user_management' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50">
+                <i class="fa-solid fa-users-gear text-xl text-amber-500"></i>
             </div>
-            <h3>User Management</h3>
-            <p>Add new users (HODs, Deans, etc.), edit credentials, and manage access permissions.</p>
-            <div class="card-btn" style="color: #ff9800;">
-                Manage Users <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">User Management</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Add new users (HODs, Deans, etc.), edit credentials, and manage access permissions.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-500 transition-all group-hover:gap-3">
+                Manage Users <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
 
         <!-- Department Management - ADMIN only -->
-        <div class="feature-card" onclick="window.location.href='{% url 'users:department_management' %}'">
-            <div class="icon-container" style="background-color: #e0f2f1;">
-                <i class="fa-solid fa-building-columns" style="color: #009688;"></i>
+        <div onclick="window.location.href='{% url 'users:department_management' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50">
+                <i class="fa-solid fa-building-columns text-xl text-teal-500"></i>
             </div>
-            <h3>Department Management</h3>
-            <p>Add, edit, and manage departments. Control department status and organization structure.</p>
-            <div class="card-btn" style="color: #009688;">
-                Manage Departments <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Department Management</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Add, edit, and manage departments. Control department status and organization structure.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-teal-500 transition-all group-hover:gap-3">
+                Manage Departments <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}
 
         <!-- Staff Database - ADMIN: full access, PRINCIPAL/DEAN/HOD: view only -->
         {% if can_modify_staff %}
-        <div class="feature-card" onclick="window.location.href='{% url 'staff:department_list' %}'">
-            <div class="icon-container" style="background-color: #fce4ec;">
-                <i class="fa-solid fa-user-tie" style="color: #9c27b0;"></i>
+        <div onclick="window.location.href='{% url 'staff:department_list' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50">
+                <i class="fa-solid fa-user-tie text-xl text-violet-500"></i>
             </div>
-            <h3>Staff Database</h3>
-            <p>Full access: Add, edit, and delete staff records and manage department assignments.</p>
-            <div class="card-btn" style="color: #9c27b0;">
-                Manage Staff <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Staff Database</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Full access: Add, edit, and delete staff records and manage department assignments.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-violet-500 transition-all group-hover:gap-3">
+                Manage Staff <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% elif can_view_staff %}
-        <div class="feature-card" onclick="window.location.href='{% url 'staff:department_list' %}'">
-            <div class="icon-container" style="background-color: #f3e5f5;">
-                <i class="fa-solid fa-user-tie" style="color: #7b1fa2;"></i>
+        <div onclick="window.location.href='{% url 'staff:department_list' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-50">
+                <i class="fa-solid fa-user-tie text-xl text-purple-500"></i>
             </div>
-            <h3>Staff Directory</h3>
-            <p>View staff records, contact information, and department assignments (read-only access).</p>
-            <div class="card-btn" style="color: #7b1fa2;">
-                View Staff <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Staff Directory</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">View staff records, contact information, and department assignments (read-only access).</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-purple-500 transition-all group-hover:gap-3">
+                View Staff <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}
 
         <!-- Academic Analytics - HOD (department only), Principal/Dean (all) -->
         {% if can_access_analytics and not can_use_ai_features %}
-        <div class="feature-card" onclick="window.location.href='{% url 'students:academic_analytics' %}'">
-            <div class="icon-container" style="background-color: #e3f2fd;">
-                <i class="fa-solid fa-chart-pie" style="color: #2196f3;"></i>
+        <div onclick="window.location.href='{% url 'students:academic_analytics' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50">
+                <i class="fa-solid fa-chart-pie text-xl text-blue-500"></i>
             </div>
-            <h3>Academic Analytics</h3>
-            <p>Semester-wise performance and marks analytics for your department.</p>
-            <div class="card-btn" style="color: #2196f3;">
-                View Analytics <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Academic Analytics</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Semester-wise performance and marks analytics for your department.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-500 transition-all group-hover:gap-3">
+                View Analytics <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}
 
         <!-- Student Database - ALL users can add/edit students -->
         {% if can_add_students or can_edit_students %}
-        <div class="feature-card" onclick="window.location.href='{% url 'students:department_list' %}'">
-            <div class="icon-container" style="background-color: #e8f5e9;">
-                <i class="fa-solid fa-user-graduate" style="color: #4caf50;"></i>
+        <div onclick="window.location.href='{% url 'students:department_list' %}'"
+             class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+            <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
+                <i class="fa-solid fa-user-graduate text-xl text-emerald-500"></i>
             </div>
-            <h3>Student Database</h3>
-            <p>Access and manage student records, attendance, and academic information.</p>
-            <div class="card-btn" style="color: #4caf50;">
-                Manage Students <i class="fa-solid fa-arrow-right"></i>
+            <h3 class="text-lg font-bold tracking-tight text-slate-900">Student Database</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-500">Access and manage student records, attendance, and academic information.</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-500 transition-all group-hover:gap-3">
+                Manage Students <i class="fa-solid fa-arrow-right text-xs"></i>
             </div>
         </div>
         {% endif %}

@@ -5,160 +5,70 @@
 
 {% block content %}
 <!-- Breadcrumb Navigation -->
-<div class="breadcrumb-nav">
-    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <span>Departments</span>
-</div>
+<nav class="mb-8 flex items-center gap-2 text-sm">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 transition hover:text-indigo-500"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <span class="font-medium text-slate-600">Departments</span>
+</nav>
 
 <!-- User Info Bar -->
-<div class="ai-status">
-    <div class="status-dot"></div>
-    <span style="font-size: 1.4rem; color: #2c3e50;">
-        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
-        <span style="color: #7f8c8d;">{{ user_role }}</span>
-    </span>
-    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+<div class="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-4 shadow-sm">
+    <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]"></span>
+    <span class="text-sm font-bold text-slate-800">{{ user_name }}</span>
+    <span class="text-sm text-slate-400">|</span>
+    <span class="text-sm text-slate-500">{{ user_role }}</span>
+    <span class="ml-auto flex items-center gap-2 text-sm text-slate-400">
         <i class="fa-solid fa-building-columns"></i> {{ total_departments }} Departments
     </span>
 </div>
 
 <!-- Departments Grid -->
-<div class="features-grid">
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-8">
     {% for item in departments %}
-    <div class="feature-card department-card" onclick="window.location.href='{% url 'students:batch_list' item.department.id %}'">
-        <div class="icon-container" style="
+    <div class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50" onclick="window.location.href='{% url 'students:batch_list' item.department.id %}'">
+        <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl
+            {% if item.department.name == 'AIDS' %}bg-emerald-50
+            {% elif item.department.name == 'CSE' %}bg-blue-50
+            {% elif item.department.name == 'CYBER' %}bg-pink-50
+            {% else %}bg-amber-50{% endif %}">
             {% if item.department.name == 'AIDS' %}
-            background-color: #e8f5e9;
+            <i class="fa-solid fa-brain text-xl text-emerald-500"></i>
             {% elif item.department.name == 'CSE' %}
-            background-color: #e3f2fd;
+            <i class="fa-solid fa-laptop-code text-xl text-blue-500"></i>
             {% elif item.department.name == 'CYBER' %}
-            background-color: #fce4ec;
+            <i class="fa-solid fa-shield-halved text-xl text-pink-500"></i>
             {% else %}
-            background-color: #fff3e0;
-            {% endif %}
-        ">
-            {% if item.department.name == 'AIDS' %}
-            <i class="fa-solid fa-brain" style="color: #4caf50;"></i>
-            {% elif item.department.name == 'CSE' %}
-            <i class="fa-solid fa-laptop-code" style="color: #2196f3;"></i>
-            {% elif item.department.name == 'CYBER' %}
-            <i class="fa-solid fa-shield-halved" style="color: #e91e63;"></i>
-            {% else %}
-            <i class="fa-solid fa-building" style="color: #ff9800;"></i>
+            <i class="fa-solid fa-building text-xl text-amber-500"></i>
             {% endif %}
         </div>
-        <h3>{{ item.department.name }}</h3>
-        <p>{{ item.department.full_name }}</p>
-        
-        <div class="dept-stats">
-            <div class="stat-item">
-                <span class="stat-number">{{ item.student_count }}</span>
-                <span class="stat-label">Students</span>
+        <h3 class="text-lg font-bold tracking-tight text-slate-900">{{ item.department.name }}</h3>
+        <p class="mt-1 text-sm text-slate-500">{{ item.department.full_name }}</p>
+
+        <div class="mt-6 flex gap-8 border-t border-b border-slate-100 py-5">
+            <div class="flex flex-col">
+                <span class="text-2xl font-extrabold text-slate-800">{{ item.student_count }}</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Students</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-number">{{ item.batch_count }}</span>
-                <span class="stat-label">Batches</span>
+            <div class="flex flex-col">
+                <span class="text-2xl font-extrabold text-slate-800">{{ item.batch_count }}</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Batches</span>
             </div>
         </div>
-        
-        <div class="card-btn" style="
-            {% if item.department.name == 'AIDS' %}color: #4caf50;
-            {% elif item.department.name == 'CSE' %}color: #2196f3;
-            {% elif item.department.name == 'CYBER' %}color: #e91e63;
-            {% else %}color: #ff9800;{% endif %}
-        ">
-            View Batches <i class="fa-solid fa-arrow-right"></i>
+
+        <div class="mt-6 inline-flex items-center gap-2 text-sm font-bold transition-all group-hover:gap-3
+            {% if item.department.name == 'AIDS' %}text-emerald-500
+            {% elif item.department.name == 'CSE' %}text-blue-500
+            {% elif item.department.name == 'CYBER' %}text-pink-500
+            {% else %}text-amber-500{% endif %}">
+            View Batches <i class="fa-solid fa-arrow-right text-xs"></i>
         </div>
     </div>
     {% empty %}
-    <div class="empty-state">
-        <i class="fa-solid fa-folder-open"></i>
-        <h3>No Departments Found</h3>
-        <p>There are no active departments in the system.</p>
+    <div class="col-span-full flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-20 text-center">
+        <i class="fa-solid fa-folder-open mb-4 text-5xl text-slate-200"></i>
+        <h3 class="text-xl font-bold text-slate-800">No Departments Found</h3>
+        <p class="mt-2 text-sm text-slate-500">There are no active departments in the system.</p>
     </div>
     {% endfor %}
 </div>
-
-<style>
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-}
-
-.breadcrumb-nav a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.breadcrumb-nav a:hover {
-    color: #2980b9;
-}
-
-.breadcrumb-nav i.fa-chevron-right {
-    font-size: 1rem;
-    color: #bdc3c7;
-}
-
-.breadcrumb-nav span {
-    color: #7f8c8d;
-}
-
-.dept-stats {
-    display: flex;
-    gap: 3rem;
-    margin: 2rem 0;
-    padding: 1.5rem 0;
-    border-top: 1px solid #ecf0f1;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.stat-number {
-    font-size: 2.8rem;
-    font-weight: 700;
-    color: #2c3e50;
-}
-
-.stat-label {
-    font-size: 1.2rem;
-    color: #95a5a6;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 6rem 2rem;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.empty-state i {
-    font-size: 5rem;
-    color: #bdc3c7;
-    margin-bottom: 2rem;
-}
-
-.empty-state h3 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-
-.empty-state p {
-    font-size: 1.4rem;
-    color: #7f8c8d;
-}
-</style>
 {% endblock %}

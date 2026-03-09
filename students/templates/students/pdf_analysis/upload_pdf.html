@@ -3,70 +3,72 @@
 {% block title %}Upload PDF - {{ semester }}{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'students:select_batch' department_id=department.id %}">{{ department.name }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}">{{ batch_year }}</a></li>
-            <li class="breadcrumb-item active">{{ semester.name }}</li>
-        </ol>
-    </nav>
+<div class="mb-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-8 flex-wrap">
+        <a href="{% url 'students:pdf_analysis_home' %}" class="text-indigo-500 hover:text-indigo-700 transition-colors">PDF Analysis</a>
+        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+        <a href="{% url 'students:select_batch' department_id=department.id %}" class="text-indigo-500 hover:text-indigo-700 transition-colors">{{ department.name }}</a>
+        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+        <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}" class="text-indigo-500 hover:text-indigo-700 transition-colors">{{ batch_year }}</a>
+        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+        <span class="text-slate-400">{{ semester.name }}</span>
+    </div>
 
-    <h1 class="mb-4">Upload PDF for Analysis</h1>
-    <p class="text-muted mb-4">
-        Department: <strong>{{ department.full_name }}</strong> | 
-        Batch: <strong>{{ batch_year }}</strong> | 
-        Semester: <strong>{{ semester.name }}</strong>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-1">Upload PDF for Analysis</h1>
+    <p class="text-sm text-slate-400 mb-8">
+        Department: <span class="font-bold text-slate-600">{{ department.full_name }}</span> |
+        Batch: <span class="font-bold text-slate-600">{{ batch_year }}</span> |
+        Semester: <span class="font-bold text-slate-600">{{ semester.name }}</span>
     </p>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Upload PDF Document</h5>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Upload Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100">
+                    <h3 class="text-sm font-extrabold text-slate-800">Upload PDF Document</h3>
                 </div>
-                <div class="card-body">
+                <div class="p-6">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
-                        <div class="mb-3">
-                            <label for="document_type" class="form-label">Document Type <span class="text-danger">*</span></label>
-                            <select class="form-select" id="document_type" name="document_type" required>
+                        <div class="mb-5">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Document Type <span class="text-red-400">*</span></label>
+                            <select name="document_type" id="document_type" required
+                                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all">
                                 <option value="">-- Select Document Type --</option>
                                 {% for value, label in document_types %}
                                 <option value="{{ value }}">{{ label }}</option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted">Select the type of document you're uploading</small>
+                            <p class="text-xs text-slate-400 mt-1.5">Select the type of document you're uploading</p>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="pdf_file" class="form-label">PDF File <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="file" class="form-control" id="pdf_file" name="pdf_file" 
-                                       accept=".pdf" required onchange="updateFileName(this)">
-                                <button class="btn btn-outline-secondary" type="button">Browse</button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                <i class="bi bi-info-circle"></i> Only PDF files are supported. Max size: 50MB
-                            </small>
-                        </div>
-
-                        <div id="file-preview" class="mb-3" style="display:none;">
-                            <p class="mb-2"><strong>File Selected:</strong></p>
-                            <div class="alert alert-info mb-0">
-                                <i class="bi bi-file-pdf"></i> 
-                                <span id="file-name"></span> 
-                                (<span id="file-size"></span>)
+                        <div class="mb-5">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">PDF File <span class="text-red-400">*</span></label>
+                            <div id="pdfDropZone" class="relative border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer transition-all hover:border-indigo-400 hover:bg-indigo-50/30 bg-slate-50">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 block mb-2" id="pdfUploadIcon"></i>
+                                <p class="text-sm text-slate-500 mb-1" id="pdfUploadText">Click or drag to upload PDF</p>
+                                <p class="text-xs text-slate-400">Only PDF files are supported. Max size: 50MB</p>
+                                <div class="hidden mt-3" id="pdfFilePreview">
+                                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 text-sm font-medium rounded-xl">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                        <span id="file-name"></span>
+                                        (<span id="file-size"></span>)
+                                    </div>
+                                </div>
+                                <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" required
+                                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                       onchange="updateFileName(this)">
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}" 
-                               class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-cloud-upload"></i> Upload & Analyze
+                        <div class="flex gap-3 justify-end">
+                            <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch_year %}"
+                               class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold rounded-2xl transition-all">Cancel</a>
+                            <button type="submit" class="inline-flex items-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
+                                <i class="fa-solid fa-cloud-upload text-xs"></i> Upload & Analyze
                             </button>
                         </div>
                     </form>
@@ -74,27 +76,26 @@
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6 class="mb-0">Tips for Best Results</h6>
+        <!-- Sidebar -->
+        <div class="space-y-5">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100">
+                    <h3 class="text-sm font-extrabold text-slate-800">Tips for Best Results</h3>
                 </div>
-                <div class="card-body small">
-                    <ul class="list-unstyled">
-                        <li><i class="bi bi-check-circle text-success"></i> Clear, scanned PDFs work best</li>
-                        <li><i class="bi bi-check-circle text-success"></i> Ensure text is readable</li>
-                        <li><i class="bi bi-check-circle text-success"></i> Supports multiple pages</li>
-                        <li><i class="bi bi-check-circle text-success"></i> Handles tables and images</li>
-                    </ul>
+                <div class="p-6 space-y-2">
+                    <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i> Clear, scanned PDFs work best</div>
+                    <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i> Ensure text is readable</div>
+                    <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i> Supports multiple pages</div>
+                    <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i> Handles tables and images</div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">What Happens Next?</h6>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100">
+                    <h3 class="text-sm font-extrabold text-slate-800">What Happens Next?</h3>
                 </div>
-                <div class="card-body small">
-                    <ol class="mb-0">
+                <div class="p-6">
+                    <ol class="space-y-1.5 text-sm text-slate-600 list-decimal pl-4">
                         <li>PDF is uploaded and analyzed using AI</li>
                         <li>Marks and grades are extracted</li>
                         <li>Results shown for verification</li>
@@ -112,7 +113,11 @@ function updateFileName(input) {
         const file = input.files[0];
         document.getElementById('file-name').textContent = file.name;
         document.getElementById('file-size').textContent = formatFileSize(file.size);
-        document.getElementById('file-preview').style.display = 'block';
+        document.getElementById('pdfFilePreview').classList.remove('hidden');
+        document.getElementById('pdfDropZone').classList.add('border-emerald-400', 'bg-emerald-50/30');
+        document.getElementById('pdfDropZone').classList.remove('border-slate-300', 'bg-slate-50');
+        document.getElementById('pdfUploadIcon').className = 'fa-solid fa-file-pdf text-3xl text-emerald-500 block mb-2';
+        document.getElementById('pdfUploadText').textContent = 'File selected:';
     }
 }
 
@@ -123,10 +128,5 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
-
-// Make file input clickable via button
-document.querySelector('button[type="button"]').addEventListener('click', function() {
-    document.getElementById('pdf_file').click();
-});
 </script>
 {% endblock %}

@@ -4,53 +4,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | ReconEdge</title>
+    <title>Admin Dashboard | DaDDy SIET</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'ui-sans-serif', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Modern Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    <!-- App stylesheet (login, circular generator, legacy utils) -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="https://kit.fontawesome.com/49f3b85e32.js" crossorigin="anonymous"></script>
+    <style>
+        /* ── Root font scale (18px base → all rem values proportionally larger) ── */
+        html { font-size: 18px; }
+
+        /* ── Sidebar link styles ─────────────────────────────── */
+        .sb-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; border-radius: 12px;
+            color: #94a3b8; text-decoration: none;
+            font-size: 14.5px; font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .sb-link:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .sb-link.active {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: #fff !important;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+        }
+        .sb-link .sb-icon { width: 20px; text-align: center; flex-shrink: 0; font-size: 15px; opacity: 0.8; }
+        .sb-link.active .sb-icon { opacity: 1; }
+        .sb-link-logout { color: #94a3b8; }
+        .sb-link-logout:hover { background: rgba(248,113,113,0.12); color: #f87171 !important; }
+
+        /* ── Smooth scrollbar ────────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ── Mobile sidebar toggle ─────────────────────────── */
+        @media (max-width: 767px) {
+            .sidebar-nav { transform: translateX(-100%); }
+            .sidebar-nav.open { transform: translateX(0); }
+            .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; }
+            .sidebar-overlay.open { display: block; }
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased">
 
-<div class="dashboard-container">
+<!-- Mobile Sidebar Overlay -->
+<div id="sidebarOverlay" class="sidebar-overlay md:hidden" onclick="toggleSidebar()"></div>
 
-    <nav class="sidebar">
-        <div class="brand">
-            <i class="fa-solid fa-graduation-cap"></i>
-            <span>Admin AI</span>
+<div class="flex min-h-screen">
+
+    <!-- ══════════════════ SIDEBAR ══════════════════ -->
+    <nav id="sidebarNav" class="sidebar-nav fixed top-0 left-0 z-50 flex h-screen w-[240px] flex-col bg-slate-900 px-4 py-5 shadow-2xl transition-transform duration-300 md:translate-x-0">
+
+        <!-- Brand -->
+        <div class="mb-10 flex items-center gap-3 px-2">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-content-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-graduation-cap mx-auto text-white text-sm"></i>
+            </div>
+            <span class="text-[18px] font-extrabold tracking-tight text-white">Admin AI</span>
         </div>
-        <ul class="nav-links">
+
+        <!-- Nav links -->
+        <ul class="flex flex-1 list-none flex-col gap-1 overflow-y-auto p-0 m-0">
+            <li class="mb-1">
+                <span class="px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">Menu</span>
+            </li>
             <li>
-                <a href="{% url 'pages:home' %}" class="{% if active_page == 'dashboard' %}active{% endif %}">
-                    <i class="fa-solid fa-grid-2"></i> Dashboard
+                <a href="{% url 'pages:home' %}" class="sb-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-grid-2 sb-icon"></i>
+                    <span>Dashboard</span>
                 </a>
             </li>
             {% if user_role != 'ADMIN' %}
             <li>
-                <a href="{% url 'circular_gen' %}" class="{% if active_page == 'circulars' %}active{% endif %}">
-                    <i class="fa-solid fa-file-pdf"></i> Circulars
+                <a href="{% url 'circular_gen' %}" class="sb-link {% if active_page == 'circulars' %}active{% endif %}">
+                    <i class="fa-solid fa-file-pdf sb-icon"></i>
+                    <span>Circulars</span>
                 </a>
             </li>
             {% endif %}
             <li>
-                <a href="{% url 'staff:department_list' %}" class="{% if active_page == 'staff' %}active{% endif %}">
-                    <i class="fa-solid fa-users"></i> Staff
+                <a href="{% url 'staff:department_list' %}" class="sb-link {% if active_page == 'staff' %}active{% endif %}">
+                    <i class="fa-solid fa-users sb-icon"></i>
+                    <span>Staff</span>
                 </a>
             </li>
             <li>
-                <a href="{% url 'students:department_list' %}" class="{% if active_page == 'students' %}active{% endif %}">
-                    <i class="fa-solid fa-user-graduate"></i> Students
+                <a href="{% url 'students:department_list' %}" class="sb-link {% if active_page == 'students' %}active{% endif %}">
+                    <i class="fa-solid fa-user-graduate sb-icon"></i>
+                    <span>Students</span>
                 </a>
             </li>
             {% if user_profile and user_profile.can_access_department_analytics %}
             <li>
-                <a href="{% url 'students:academic_analytics' %}" class="{% if active_page == 'analytics' %}active{% endif %}">
-                    <i class="fa-solid fa-chart-pie"></i> Analytics
+                <a href="{% url 'students:academic_analytics' %}" class="sb-link {% if active_page == 'analytics' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie sb-icon"></i>
+                    <span>Analytics</span>
                 </a>
             </li>
             {% endif %}
 
-            <li style="margin-top: auto;">
-                <a href="{% url 'users:logout' %}" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            <li class="mt-auto border-t border-white/[0.06] pt-4">
+                <a href="{% url 'users:logout' %}" id="logoutLink" class="sb-link sb-link-logout">
+                    <i class="fa-solid fa-right-from-bracket sb-icon"></i>
+                    <span>Logout</span>
+                </a>
             </li>
         </ul>
     </nav>
@@ -67,22 +144,34 @@
             keysToRemove.forEach(k => localStorage.removeItem(k));
         } catch(e) { /* storage may be blocked in private mode */ }
     });
+
+    /* ── Mobile sidebar toggle ── */
+    function toggleSidebar() {
+        document.getElementById('sidebarNav').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('open');
+    }
     </script>
 
-    <main class="main-content">
+    <!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+    <main class="ml-0 md:ml-[240px] flex flex-1 flex-col min-h-screen">
 
-        <header class="header-bar">
-            <div class="welcome-text">
-                <h2>{% block page_title %}Welcome{% endblock %}</h2>
-                <p>{% block page_subtitle %}System Overview{% endblock %}</p>
+        <!-- ── Sticky Header Bar ── -->
+        <header class="sticky top-0 z-40 flex items-center justify-between border-b border-slate-100 bg-white/80 px-6 py-3 backdrop-blur-xl md:px-10 lg:px-12">
+            <!-- Mobile burger -->
+            <button onclick="toggleSidebar()" class="mr-4 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 md:hidden">
+                <i class="fa-solid fa-bars text-sm"></i>
+            </button>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-xl font-extrabold tracking-tight text-slate-900 md:text-[1.4rem]">{% block page_title %}Welcome{% endblock %}</h1>
+                <p class="mt-0.5 text-sm text-slate-400">{% block page_subtitle %}System Overview{% endblock %}</p>
             </div>
-            <div class="header-clock" id="headerClock" aria-hidden="false">
-                <div class="clock-date" id="clockDate">&nbsp;</div>
-                <div class="clock-time" id="clockTime">&nbsp;</div>
-            </div>
-            <div class="user-profile">
-                <div style="width: 40px; height: 40px; background: #dfe6e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-user" style="color: #636e72;"></i>
+            <div class="flex items-center gap-5">
+                <div id="headerClock" class="hidden text-right sm:block" aria-hidden="false">
+                    <div id="clockDate" class="text-[12px] font-medium text-slate-400">&nbsp;</div>
+                    <div id="clockTime" class="text-sm font-bold text-slate-700">&nbsp;</div>
+                </div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-50 ring-2 ring-slate-200/60">
+                    <i class="fa-solid fa-user text-xs text-slate-400"></i>
                 </div>
             </div>
         </header>
@@ -90,7 +179,6 @@
         <script>
         // realtime header clock (common for all users)
         (function() {
-            function two(n){return n<10? '0'+n: n}
             function updateClock(){
                 try{
                     const now = new Date();
@@ -109,8 +197,11 @@
         })();
         </script>
 
-        {% block content %}
-        {% endblock %}
+        <!-- ── Page Content ── -->
+        <div class="flex-1 px-5 py-5 md:px-8 md:py-6 lg:px-10 lg:py-8">
+            {% block content %}
+            {% endblock %}
+        </div>
 
     </main>
 </div>

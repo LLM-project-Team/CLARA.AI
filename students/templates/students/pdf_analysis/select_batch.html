@@ -3,42 +3,38 @@
 {% block title %}Select Batch - {{ department.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
-            <li class="breadcrumb-item active">{{ department.name }}</li>
-        </ol>
-    </nav>
+<div class="mb-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-8">
+        <a href="{% url 'students:pdf_analysis_home' %}" class="text-indigo-500 hover:text-indigo-700 transition-colors">PDF Analysis</a>
+        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+        <span class="text-slate-400">{{ department.name }}</span>
+    </div>
 
-    <h1 class="mb-4">Select Batch/Year</h1>
-    <p class="text-muted mb-4">Department: <strong>{{ department.full_name }}</strong></p>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-1">Select Batch/Year</h1>
+    <p class="text-sm text-slate-400 mb-8">Department: <span class="font-bold text-slate-600">{{ department.full_name }}</span></p>
 
-    <div class="row">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         {% for batch in batches %}
-        <div class="col-md-3 mb-3">
-            <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch %}" 
-               class="card text-decoration-none border-primary h-100">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-primary">{{ batch }}</h5>
-                    <p class="card-text text-muted">Batch {{ batch }}</p>
-                    <span class="btn btn-primary btn-sm">
-                        Select <i class="bi bi-arrow-right"></i>
-                    </span>
-                </div>
-            </a>
-        </div>
+        <a href="{% url 'students:select_semester' department_id=department.id batch_year=batch %}"
+           class="group bg-white rounded-2xl border border-slate-100 p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-indigo-300">
+            <h4 class="text-lg font-extrabold text-indigo-600 mb-1">{{ batch }}</h4>
+            <p class="text-xs text-slate-400 mb-3">Batch {{ batch }}</p>
+            <span class="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 group-hover:gap-2 transition-all">
+                Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </span>
+        </a>
         {% empty %}
-        <div class="col-12">
-            <div class="alert alert-warning" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> No batches found for this department.
+        <div class="col-span-full">
+            <div class="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 text-sm text-amber-600 flex items-center gap-2">
+                <i class="fa-solid fa-exclamation-triangle"></i> No batches found for this department.
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <a href="{% url 'students:pdf_analysis_home' %}" class="btn btn-secondary mt-4">
-        <i class="bi bi-arrow-left"></i> Back to Department Selection
+    <a href="{% url 'students:pdf_analysis_home' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold rounded-2xl transition-all">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Back to Department Selection
     </a>
 </div>
 {% endblock %}

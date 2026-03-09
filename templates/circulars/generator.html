@@ -5,667 +5,61 @@
 
 {% block extra_css %}
 <style>
-/* ── Circular Generator — Clean Single-Column Layout ── */
+/* ── A4 Paper & Editor (functional CSS) ── */
+.editor-section { display:flex; flex-direction:column; border-radius:1.5rem; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.12); }
+.editor-toolbar { background:#1e293b; padding:1rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.editor-title-input { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:white; font-size:0.875rem; font-weight:500; padding:0.6rem 1rem; border-radius:0.75rem; flex:1; min-width:180px; }
+.editor-title-input::placeholder { color:rgba(255,255,255,0.4); }
+.editor-title-input:focus { outline:none; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.12); }
+.editor-actions { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.a4-preview { background:#e2e8f0; padding:3rem 2rem; display:flex; justify-content:center; overflow:auto; }
+.a4-paper { background:#fff; width:794px; min-height:1123px; box-shadow:0 4px 24px rgba(0,0,0,0.25); padding:72px 80px; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+.a4-paper.has-template { padding:0; }
+.a4-template-bg { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; pointer-events:none; }
+.a4-paper.has-template .editor-textarea, .a4-paper.has-template .circ-content { position:relative; z-index:1; padding-left:80px; padding-right:80px; background:transparent; }
+.editor-textarea { flex:1; width:100%; min-height:950px; border:none; outline:none; resize:none; font-family:'Times New Roman','Georgia',serif; font-size:14.5px; line-height:1.65; background:transparent; color:#111; padding:0; margin:0; white-space:pre-wrap; word-wrap:break-word; }
+.editor-textarea:focus { outline:none; }
+.editor-textarea[readonly] { cursor:default; color:#222; }
+.circ-content { position:relative; z-index:1; font-family:'Times New Roman','Georgia',serif; font-size:14.5px; line-height:1.65; color:#111; flex:1; width:100%; min-height:950px; }
+.circ-pre-header { text-align:center; white-space:pre-wrap; margin-bottom:0.5em; line-height:1.4; }
+.circ-meta-row { display:flex; justify-content:space-between; align-items:flex-start; }
+.circ-heading { text-align:center; font-weight:bold; font-size:15.5px; margin:0.6em 0; text-decoration:underline; }
+.circ-body { min-height:350px; outline:none; white-space:pre-wrap; word-wrap:break-word; padding:0.2em 0; }
+.circ-body:focus { outline:none; }
+.circ-copyto { white-space:pre-wrap; margin-top:0.3em; }
+.circ-signature { text-align:right; margin:1.5em 0; padding-right:2em; }
+.editor-footer { background:#1e293b; padding:0.7rem 1.5rem; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#64748b; }
 
-/* Top action bar */
-.circ-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: white;
-    border-radius: 14px;
-    padding: 1.4rem 2.4rem;
-    margin-bottom: 2.8rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    flex-wrap: wrap;
-    gap: 1.2rem;
-}
+/* History dropdown */
+.history-dropdown { display:none; position:absolute; top:calc(100% + 8px); right:0; width:280px; background:white; border-radius:1rem; box-shadow:0 12px 40px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:100; animation:fadeIn 0.2s ease; overflow:hidden; }
+.history-dropdown.open { display:block; }
 
-.circ-topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
+/* Buttons for editor toolbar */
+.ed-btn { padding:0.5rem 1rem; border-radius:0.75rem; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; transition:all 0.2s; border:none; text-decoration:none; }
+.ed-btn-save { background:#22c55e; color:white; }
+.ed-btn-save:hover { background:#16a34a; transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,0.35); }
+.ed-btn-ghost { background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.12); }
+.ed-btn-ghost:hover { background:rgba(255,255,255,0.15); color:white; }
+.ed-btn-danger { background:#ef4444; color:white; }
+.ed-btn-danger:hover { background:#dc2626; transform:translateY(-1px); }
 
-.circ-topbar-left .back-link {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    color: #64748b;
-    text-decoration: none;
-    font-size: 1.35rem;
-    font-weight: 500;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.circ-topbar-left .back-link:hover {
-    background: #f1f5f9;
-    color: #2c3e50;
-}
-
-.circ-topbar-center {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.circ-topbar-center .tb-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.7rem 1.6rem;
-    border-radius: 8px;
-    font-size: 1.3rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s;
-    border: none;
-    cursor: pointer;
-}
-
-.tb-btn-new {
-    background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(241,196,15,0.3);
-}
-
-.tb-btn-new:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(241,196,15,0.4);
-}
-
-.tb-btn-outline {
-    background: transparent;
-    color: #64748b;
-    border: 1.5px solid #e2e8f0;
-}
-
-.tb-btn-outline:hover {
-    background: #f8fafc;
-    color: #2c3e50;
-    border-color: #cbd5e1;
-}
-
-.circ-topbar-right {
-    position: relative;
-}
-
-.history-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.7rem 1.4rem;
-    border-radius: 8px;
-    font-size: 1.3rem;
-    font-weight: 500;
-    background: #f8fafc;
-    color: #475569;
-    border: 1.5px solid #e2e8f0;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.history-toggle:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-}
-
-.history-toggle .badge {
-    background: #f1c40f;
-    color: white;
-    font-size: 1.1rem;
-    padding: 0.15rem 0.6rem;
-    border-radius: 10px;
-    font-weight: 600;
-    min-width: 20px;
-    text-align: center;
-}
-
-/* History dropdown panel */
-.history-dropdown {
-    display: none;
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 320px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-    border: 1px solid #e2e8f0;
-    z-index: 100;
-    animation: fadeIn 0.2s ease;
-    overflow: hidden;
-}
-
-.history-dropdown.open {
-    display: block;
-}
-
-.history-dropdown-header {
-    padding: 1.2rem 1.6rem;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 1.35rem;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.history-dropdown-list {
-    max-height: 280px;
-    overflow-y: auto;
-    padding: 0.5rem;
-}
-
-.history-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.2rem;
-    border-radius: 8px;
-    text-decoration: none;
-    color: #475569;
-    font-size: 1.3rem;
-    transition: all 0.15s;
-}
-
-.history-dropdown-item:hover {
-    background: #f8fafc;
-    color: #2c3e50;
-}
-
-.history-dropdown-item i {
-    color: #f1c40f;
-    font-size: 1.3rem;
-    flex-shrink: 0;
-}
-
-.history-dropdown-empty {
-    padding: 2.5rem 1.6rem;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 1.3rem;
-}
-
-.history-dropdown-empty i {
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 0.8rem;
-    color: #cbd5e1;
-}
-
-/* ── Welcome Section ── */
-.welcome-section {
-    text-align: center;
-    margin-bottom: 3.5rem;
-    padding-top: 1rem;
-}
-
-.welcome-title {
-    font-size: 2.8rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 0.6rem;
-}
-
-.welcome-title span {
-    background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.welcome-subtitle {
-    font-size: 1.55rem;
-    color: #94a3b8;
-    font-weight: 400;
-}
-
-/* ── Template Grid ── */
-.template-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.8rem;
-    max-width: 860px;
-    margin: 0 auto 3rem;
-}
-
-.template-card {
-    background: white;
-    border-radius: 14px;
-    padding: 2.2rem;
-    cursor: pointer;
-    transition: all 0.25s;
-    border: 1.5px solid #f1f5f9;
-    text-decoration: none;
-    color: inherit;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.template-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
-    border-color: #f1c40f;
-}
-
-.template-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    margin-bottom: 1.2rem;
-}
-
-.template-icon.holiday { background: #fef9c3; color: #ca8a04; }
-.template-icon.exam { background: #dbeafe; color: #2563eb; }
-.template-icon.meeting { background: #dcfce7; color: #16a34a; }
-.template-icon.disciplinary { background: #fee2e2; color: #dc2626; }
-.template-icon.general { background: #f3e8ff; color: #9333ea; }
-.template-icon.event { background: #fce7f3; color: #db2777; }
-
-.template-card h4 {
-    font-size: 1.5rem;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.template-card p {
-    font-size: 1.25rem;
-    color: #94a3b8;
-    line-height: 1.5;
-    margin: 0;
-}
-
-/* ── Editor Section ── */
-.editor-section {
-    display: flex;
-    flex-direction: column;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-}
-
-.editor-toolbar {
-    background: #1e293b;
-    padding: 1.2rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.editor-title-input {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: white;
-    font-size: 1.45rem;
-    font-weight: 500;
-    padding: 0.8rem 1.4rem;
-    border-radius: 8px;
-    flex: 1;
-    min-width: 200px;
-}
-
-.editor-title-input::placeholder {
-    color: rgba(255,255,255,0.4);
-}
-
-.editor-title-input:focus {
-    outline: none;
-    border-color: rgba(255,255,255,0.35);
-    background: rgba(255,255,255,0.12);
-}
-
-.editor-actions {
-    display: flex;
-    gap: 0.8rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.editor-toolbar .btn-secondary {
-    background: rgba(255,255,255,0.08);
-    color: #94a3b8;
-    border: 1px solid rgba(255,255,255,0.12);
-}
-
-.editor-toolbar .btn-secondary:hover {
-    background: rgba(255,255,255,0.15);
-    color: white;
-}
-
-/* A4 paper preview */
-.a4-preview {
-    background: #e2e8f0;
-    padding: 3rem 2rem;
-    display: flex;
-    justify-content: center;
-    overflow: auto;
-}
-
-.a4-paper {
-    background: #ffffff;
-    width: 794px;
-    min-height: 1123px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
-    padding: 72px 80px;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-}
-
-.a4-paper.has-template {
-    padding: 0;
-}
-
-.a4-template-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.a4-paper.has-template .editor-textarea,
-.a4-paper.has-template .circ-content {
-    position: relative;
-    z-index: 1;
-    padding-left: 80px;
-    padding-right: 80px;
-    background: transparent;
-}
-
-.editor-textarea {
-    flex: 1;
-    width: 100%;
-    min-height: 950px;
-    border: none;
-    outline: none;
-    resize: none;
-    font-family: 'Times New Roman', 'Georgia', serif;
-    font-size: 14.5px;
-    line-height: 1.65;
-    background: transparent;
-    color: #111;
-    padding: 0;
-    margin: 0;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.editor-textarea:focus {
-    outline: none;
-}
-
-.editor-textarea[readonly] {
-    cursor: default;
-    color: #222;
-}
-
-/* Structured circular content */
-.circ-content {
-    position: relative;
-    z-index: 1;
-    font-family: 'Times New Roman', 'Georgia', serif;
-    font-size: 14.5px;
-    line-height: 1.65;
-    color: #111;
-    flex: 1;
-    width: 100%;
-    min-height: 950px;
-}
-
-.circ-pre-header {
-    text-align: center;
-    white-space: pre-wrap;
-    margin-bottom: 0.5em;
-    line-height: 1.4;
-}
-
-.circ-meta-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.circ-heading {
-    text-align: center;
-    font-weight: bold;
-    font-size: 15.5px;
-    margin: 0.6em 0;
-    text-decoration: underline;
-}
-
-.circ-body {
-    min-height: 350px;
-    outline: none;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    padding: 0.2em 0;
-}
-
-.circ-body:focus {
-    outline: none;
-}
-
-.circ-copyto {
-    white-space: pre-wrap;
-    margin-top: 0.3em;
-}
-
-.circ-signature {
-    text-align: right;
-    margin: 1.5em 0;
-    padding-right: 2em;
-}
-
-.editor-footer {
-    background: #1e293b;
-    padding: 0.9rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.25rem;
-    color: #64748b;
-}
+/* Prompt styling */
+.prompt-send { background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-size:0.875rem; transition:all 0.2s; flex-shrink:0; }
+.prompt-send:hover { transform:scale(1.08); box-shadow:0 3px 12px rgba(245,158,11,0.4); }
 
 /* Print */
 @media print {
     .sidebar, .main-content .header-bar, .circ-topbar,
     .editor-toolbar, .editor-footer, .prompt-section,
-    .welcome-section, .template-grid { display: none !important; }
-    .main-content { margin-left: 0 !important; padding: 0 !important; }
-    body, html { background: white !important; }
-    .a4-preview {
-        background: white !important;
-        padding: 0 !important;
-        display: block !important;
-    }
-    .a4-paper {
-        box-shadow: none !important;
-        width: 100% !important;
-        min-height: auto !important;
-        padding: 0 !important;
-    }
-    .editor-textarea,
-    .circ-content {
-        min-height: auto !important;
-        overflow: visible !important;
-    }
-    .circ-body {
-        min-height: auto !important;
-    }
-    @page { size: A4 portrait; margin: 1.5cm; }
-    .a4-template-bg {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        display: block !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-}
-
-/* ── Buttons ── */
-.btn {
-    padding: 0.8rem 1.8rem;
-    border-radius: 8px;
-    font-size: 1.3rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    transition: all 0.2s;
-    border: none;
-    text-decoration: none;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(46, 204, 113, 0.35);
-}
-
-.btn-secondary {
-    background: white;
-    color: #64748b;
-    border: 1.5px solid #e2e8f0;
-}
-
-.btn-secondary:hover {
-    background: #f8fafc;
-    color: #2c3e50;
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-}
-
-.btn-danger:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.35);
-}
-
-/* ── Prompt Input ── */
-.prompt-section {
-    background: white;
-    padding: 1.6rem 2.4rem;
-    border-radius: 14px;
-    margin-top: 2rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}
-
-.prompt-box {
-    display: flex;
-    align-items: center;
-    background: #f8fafc;
-    border-radius: 28px;
-    padding: 0.6rem 1rem 0.6rem 2rem;
-    border: 1.5px solid #e2e8f0;
-    transition: all 0.25s;
-}
-
-.prompt-box:focus-within {
-    border-color: #f1c40f;
-    background: white;
-    box-shadow: 0 4px 16px rgba(241, 196, 15, 0.12);
-}
-
-.prompt-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 1.4rem;
-    padding: 0.8rem;
-    color: #1e293b;
-}
-
-.prompt-input::placeholder {
-    color: #94a3b8;
-}
-
-.prompt-send {
-    background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
-    border: none;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.prompt-send:hover {
-    transform: scale(1.08);
-    box-shadow: 0 3px 12px rgba(241,196,15,0.4);
-}
-
-/* Messages */
-.alert {
-    padding: 1.2rem 1.8rem;
-    border-radius: 10px;
-    margin-bottom: 1.8rem;
-    font-size: 1.35rem;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.alert-success {
-    background: #dcfce7;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
-}
-
-.alert-error {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-}
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-    .template-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 600px) {
-    .template-grid {
-        grid-template-columns: 1fr;
-    }
-    .circ-topbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .welcome-title {
-        font-size: 2.2rem;
-    }
+    .welcome-section, .template-grid { display:none !important; }
+    .main-content { margin-left:0 !important; padding:0 !important; }
+    body, html { background:white !important; }
+    .a4-preview { background:white !important; padding:0 !important; display:block !important; }
+    .a4-paper { box-shadow:none !important; width:100% !important; min-height:auto !important; padding:0 !important; }
+    .editor-textarea, .circ-content { min-height:auto !important; overflow:visible !important; }
+    .circ-body { min-height:auto !important; }
+    @page { size:A4 portrait; margin:1.5cm; }
+    .a4-template-bg { position:absolute !important; top:0 !important; left:0 !important; width:100% !important; height:100% !important; display:block !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 </style>
 {% endblock %}
@@ -674,41 +68,39 @@
 {% block content %}
 
 <!-- Top Action Bar -->
-<div class="circ-topbar">
-    <div class="circ-topbar-left">
-        <a href="{% url 'pages:home' %}" class="back-link">
-            <i class="fa-solid fa-arrow-left"></i> Dashboard
-        </a>
-    </div>
+<div class="circ-topbar flex flex-wrap items-center justify-between gap-3 bg-white rounded-3xl border border-slate-100 shadow-sm px-6 py-4 mb-8">
+    <a href="{% url 'pages:home' %}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+    </a>
 
-    <div class="circ-topbar-center">
-        <a href="{% url 'circular_gen' %}" class="tb-btn tb-btn-new">
-            <i class="fa-solid fa-plus"></i> New Circular
+    <div class="flex items-center gap-2">
+        <a href="{% url 'circular_gen' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/30">
+            <i class="fa-solid fa-plus text-xs"></i> New Circular
         </a>
-        <a href="{% url 'circular_upload_template' %}" class="tb-btn tb-btn-outline">
-            <i class="fa-solid fa-file-image"></i>
+        <a href="{% url 'circular_upload_template' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-sm font-medium text-slate-600 rounded-2xl hover:bg-slate-50 transition-all">
+            <i class="fa-solid fa-file-image text-xs"></i>
             {% if active_template %}Change Template{% else %}Upload Template{% endif %}
         </a>
     </div>
 
-    <div class="circ-topbar-right">
-        <button class="history-toggle" onclick="toggleHistory()">
-            <i class="fa-solid fa-clock-rotate-left"></i> Recent
-            {% if history %}<span class="badge">{{ history|length }}</span>{% endif %}
+    <div class="relative">
+        <button onclick="toggleHistory()" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-sm font-medium text-slate-600 rounded-2xl transition-all">
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i> Recent
+            {% if history %}<span class="ml-1 px-2 py-0.5 bg-amber-400 text-white text-xs font-bold rounded-full">{{ history|length }}</span>{% endif %}
         </button>
 
         <div class="history-dropdown" id="historyDropdown">
-            <div class="history-dropdown-header">Recent Circulars</div>
-            <div class="history-dropdown-list">
+            <div class="px-4 py-3 border-b border-slate-100 text-sm font-extrabold text-slate-800">Recent Circulars</div>
+            <div class="max-h-72 overflow-y-auto p-1.5">
                 {% for item in history %}
-                <a href="{% url 'circular_view' item.id %}" class="history-dropdown-item">
-                    <i class="fa-regular fa-file-lines"></i>
-                    <span>{{ item.title|truncatechars:30 }}</span>
+                <a href="{% url 'circular_view' item.id %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                    <i class="fa-regular fa-file-lines text-amber-400 shrink-0"></i>
+                    <span class="truncate">{{ item.title|truncatechars:30 }}</span>
                 </a>
                 {% empty %}
-                <div class="history-dropdown-empty">
-                    <i class="fa-regular fa-folder-open"></i>
-                    No circulars yet
+                <div class="text-center py-8 text-slate-400">
+                    <i class="fa-regular fa-folder-open text-2xl block mb-2 text-slate-300"></i>
+                    <span class="text-sm">No circulars yet</span>
                 </div>
                 {% endfor %}
             </div>
@@ -719,7 +111,7 @@
 <!-- Messages -->
 {% if messages %}
 {% for message in messages %}
-<div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+<div class="flex items-center gap-3 px-5 py-4 rounded-2xl mb-4 text-sm font-medium {% if message.tags == 'error' %}bg-red-50 border border-red-100 text-red-600{% else %}bg-emerald-50 border border-emerald-100 text-emerald-600{% endif %}">
     <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
     {{ message }}
 </div>
@@ -742,24 +134,24 @@
             <input type="hidden" name="category" value="{{ template_type|default:'manual' }}">
 
             <div class="editor-actions">
-                <button type="button" onclick="window.print()" class="btn btn-secondary">
+                <button type="button" onclick="window.print()" class="ed-btn ed-btn-ghost">
                     <i class="fa-solid fa-print"></i> Print
                 </button>
                 {% if view_mode %}
-                    <a href="{% url 'circular_gen' %}" class="btn btn-secondary">
+                    <a href="{% url 'circular_gen' %}" class="ed-btn ed-btn-ghost">
                         <i class="fa-solid fa-arrow-left"></i> Back
                     </a>
                     <form method="POST" action="{% url 'circular_delete' circular.id %}" style="display:inline;" onsubmit="return confirm('Delete this circular?');">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
+                        <button type="submit" class="ed-btn ed-btn-danger">
                             <i class="fa-solid fa-trash"></i> Delete
                         </button>
                     </form>
                 {% else %}
-                    <a href="{% url 'circular_gen' %}" class="btn btn-secondary">
+                    <a href="{% url 'circular_gen' %}" class="ed-btn ed-btn-ghost">
                         <i class="fa-solid fa-times"></i> Discard
                     </a>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="ed-btn ed-btn-save">
                         <i class="fa-solid fa-check"></i> Save & Approve
                     </button>
                 {% endif %}
@@ -796,71 +188,71 @@
 
 {% else %}
 <!-- Welcome / Template Selection -->
-<div class="welcome-section">
-    <h1 class="welcome-title">Hello, <span>{{ user_name }}</span></h1>
-    <p class="welcome-subtitle">What would you like to draft today?</p>
+<div class="welcome-section text-center mb-10 pt-4">
+    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Hello, <span class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{{ user_name }}</span></h1>
+    <p class="text-base text-slate-400">What would you like to draft today?</p>
 </div>
 
-<div class="template-grid">
-    <a href="{% url 'circular_gen' %}?template=holiday" class="template-card">
-        <div class="template-icon holiday">
+<div class="template-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-3xl mx-auto mb-10">
+    <a href="{% url 'circular_gen' %}?template=holiday" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-amber-300">
+        <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-umbrella-beach"></i>
         </div>
-        <h4>Declare Holiday</h4>
-        <p>Draft a notice for a holiday or festival.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">Declare Holiday</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Draft a notice for a holiday or festival.</p>
     </a>
 
-    <a href="{% url 'circular_gen' %}?template=exam" class="template-card">
-        <div class="template-icon exam">
+    <a href="{% url 'circular_gen' %}?template=exam" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300">
+        <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-clock"></i>
         </div>
-        <h4>Exam Schedule</h4>
-        <p>Notify about upcoming examination dates.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">Exam Schedule</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Notify about upcoming examination dates.</p>
     </a>
 
-    <a href="{% url 'circular_gen' %}?template=meeting" class="template-card">
-        <div class="template-icon meeting">
+    <a href="{% url 'circular_gen' %}?template=meeting" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-300">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-users"></i>
         </div>
-        <h4>Staff Meeting</h4>
-        <p>Call for a meeting with staff or HODs.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">Staff Meeting</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Call for a meeting with staff or HODs.</p>
     </a>
 
-    <a href="{% url 'circular_gen' %}?template=disciplinary" class="template-card">
-        <div class="template-icon disciplinary">
+    <a href="{% url 'circular_gen' %}?template=disciplinary" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-red-300">
+        <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
-        <h4>Disciplinary Notice</h4>
-        <p>Draft a formal warning or notice.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">Disciplinary Notice</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Draft a formal warning or notice.</p>
     </a>
 
-    <a href="{% url 'circular_gen' %}?template=event" class="template-card">
-        <div class="template-icon event">
+    <a href="{% url 'circular_gen' %}?template=event" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-pink-300">
+        <div class="w-11 h-11 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-calendar-star"></i>
         </div>
-        <h4>Event Announcement</h4>
-        <p>Announce an upcoming event or function.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">Event Announcement</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Announce an upcoming event or function.</p>
     </a>
 
-    <a href="{% url 'circular_gen' %}?template=general" class="template-card">
-        <div class="template-icon general">
+    <a href="{% url 'circular_gen' %}?template=general" class="group bg-white rounded-3xl border border-slate-100 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-purple-300">
+        <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center text-lg mb-4">
             <i class="fa-solid fa-bullhorn"></i>
         </div>
-        <h4>General Notice</h4>
-        <p>Create a custom announcement.</p>
+        <h4 class="text-sm font-extrabold text-slate-800 mb-1">General Notice</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Create a custom announcement.</p>
     </a>
 </div>
 {% endif %}
 
 {% if not view_mode %}
 <!-- AI Prompt -->
-<div class="prompt-section">
+<div class="prompt-section bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mt-6">
     <form method="POST" action="{% url 'circular_ai_generate' %}" id="aiPromptForm" onsubmit="event.preventDefault(); generateAI();">
         {% csrf_token %}
-        <div class="prompt-box">
+        <div class="flex items-center bg-slate-50 rounded-full px-5 py-1.5 border border-slate-200 transition-all focus-within:border-amber-400 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-amber-100/50">
             <input type="text"
                    name="prompt"
-                   class="prompt-input"
+                   class="flex-1 border-none bg-transparent text-sm py-2 px-1 text-slate-800 placeholder-slate-400 focus:outline-none"
                    id="promptInput"
                    placeholder="Describe what you need... (e.g., 'Draft a circular for Pongal Holiday on Jan 14')">
             <button type="submit" class="prompt-send">

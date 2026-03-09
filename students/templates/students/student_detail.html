@@ -5,135 +5,122 @@
 
 {% block content %}
 <!-- Breadcrumb Navigation -->
-<div class="breadcrumb-nav">
-    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:department_list' %}">Departments</a>
-    <i class="fa-solid fa-chevron-right"></i>
+<nav class="mb-8 flex items-center gap-2 text-sm flex-wrap">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 hover:text-indigo-500 transition"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:department_list' %}" class="text-slate-400 hover:text-indigo-500 transition">Departments</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
     {% if department %}
-    <a href="{% url 'students:batch_list' department.id %}">{{ department.name }}</a>
-    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:batch_list' department.id %}" class="text-slate-400 hover:text-indigo-500 transition">{{ department.name }}</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
     {% if batch_year %}
-    <a href="{% url 'students:student_list' department.id batch_year %}">{{ batch_year }}</a>
-    <i class="fa-solid fa-chevron-right"></i>
+    <a href="{% url 'students:student_list' department.id batch_year %}" class="text-slate-400 hover:text-indigo-500 transition">{{ batch_year }}</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
     {% endif %}
     {% endif %}
-    <span>{{ student.student_name }}</span>
-</div>
+    <span class="text-slate-600 font-medium">{{ student.student_name }}</span>
+</nav>
 
 <!-- Action Buttons Row -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+<div class="mb-6 flex items-center justify-between">
     {% if department and batch_year %}
-    <a href="{% url 'students:student_list' department.id batch_year %}" class="back-button" style="margin: 0;">
+    <a href="{% url 'students:student_list' department.id batch_year %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
         <i class="fa-solid fa-arrow-left"></i> Back to Students
     </a>
     {% else %}
-    <a href="{% url 'students:department_list' %}" class="back-button" style="margin: 0;">
+    <a href="{% url 'students:department_list' %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
         <i class="fa-solid fa-arrow-left"></i> Back
     </a>
     {% endif %}
-    
+
     {% if can_edit %}
-    <a href="{% url 'students:student_edit' student.id %}" style="
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: transform 0.2s, box-shadow 0.2s;
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+    <a href="{% url 'students:student_edit' student.id %}" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30">
         <i class="fa-solid fa-pen"></i> Edit Student
     </a>
     {% endif %}
 </div>
 
 <!-- Profile Header Card -->
-<div class="profile-header-card">
-    <div class="profile-avatar {% if student.gender == 'MALE' %}male{% else %}female{% endif %}">
+<div class="mb-8 flex flex-col items-center gap-6 rounded-3xl bg-gradient-to-r from-indigo-500 to-violet-600 p-8 shadow-xl shadow-indigo-500/20 md:flex-row md:items-center">
+    <div class="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-white/30 bg-white/20 text-4xl {% if student.gender == 'MALE' %}text-sky-200{% else %}text-pink-200{% endif %}">
         <i class="fa-solid fa-{% if student.gender == 'MALE' %}mars{% else %}venus{% endif %}"></i>
     </div>
-    <div class="profile-info">
-        <h2>{{ student.student_name }}</h2>
-        <p>{% if department %}{{ department.full_name }}{% endif %} {% if batch_year %}| Batch {{ batch_year }}{% endif %}</p>
-        <div class="profile-badges">
+    <div class="text-center md:text-left">
+        <h2 class="text-3xl font-extrabold tracking-tight text-white">{{ student.student_name }}</h2>
+        <p class="mt-1 text-sm text-white/70">{% if department %}{{ department.full_name }}{% endif %} {% if batch_year %}| Batch {{ batch_year }}{% endif %}</p>
+        <div class="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
             {% if student.roll_number %}
-            <span class="badge badge-dark"><i class="fa-solid fa-id-card"></i> {{ student.roll_number }}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-xs font-medium text-white"><i class="fa-solid fa-id-card"></i> {{ student.roll_number }}</span>
             {% endif %}
             {% if student.register_number %}
-            <span class="badge badge-primary"><i class="fa-solid fa-hashtag"></i> {{ student.register_number }}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-400/30 px-3 py-1 text-xs font-medium text-white"><i class="fa-solid fa-hashtag"></i> {{ student.register_number }}</span>
             {% endif %}
-            <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">{{ student.gender }}</span>
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {% if student.gender == 'MALE' %}bg-sky-100 text-sky-600{% else %}bg-pink-100 text-pink-600{% endif %}">{{ student.gender }}</span>
             {% if student.hosteller %}
-            <span class="badge badge-green"><i class="fa-solid fa-building"></i> Hosteller</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700"><i class="fa-solid fa-building"></i> Hosteller</span>
             {% else %}
-            <span class="badge badge-orange"><i class="fa-solid fa-home"></i> Day Scholar</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700"><i class="fa-solid fa-home"></i> Day Scholar</span>
             {% endif %}
         </div>
     </div>
 </div>
 
 <!-- Info Cards Grid -->
-<div class="info-grid">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Personal Information -->
-    <div class="info-card">
-        <div class="info-card-header">
-            <i class="fa-solid fa-user"></i>
-            <h3>Personal Information</h3>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-4 text-white">
+            <i class="fa-solid fa-user text-lg"></i>
+            <h3 class="text-sm font-bold uppercase tracking-wider">Personal Information</h3>
         </div>
-        <div class="info-card-body">
-            <div class="info-row">
-                <span class="label">Full Name</span>
-                <span class="value">{{ student.student_name }}</span>
+        <div class="divide-y divide-slate-100 px-6">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Full Name</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.student_name }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Gender</span>
-                <span class="value">
-                    <span class="badge {% if student.gender == 'MALE' %}badge-blue{% else %}badge-pink{% endif %}">{{ student.gender }}</span>
-                </span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Gender</span>
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {% if student.gender == 'MALE' %}bg-sky-50 text-sky-600{% else %}bg-pink-50 text-pink-600{% endif %}">{{ student.gender }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Date of Birth</span>
-                <span class="value">{{ student.date_of_birth|date:"d M Y"|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Date of Birth</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.date_of_birth|date:"d M Y"|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Blood Group</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Blood Group</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.blood_group %}
-                    <span class="badge badge-red">{{ student.blood_group }}</span>
+                    <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">{{ student.blood_group }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Aadhaar Number</span>
-                <span class="value">{{ student.aadhaar_number|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Aadhaar Number</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.aadhaar_number|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Religion</span>
-                <span class="value">{{ student.religion|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Religion</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.religion|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Community</span>
-                <span class="value">{{ student.community|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Community</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.community|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Caste</span>
-                <span class="value">{{ student.caste|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Caste</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.caste|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">District</span>
-                <span class="value">{{ student.district|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">District</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.district|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">First Graduate</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">First Graduate</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.first_graduate %}
-                    <span class="badge badge-green"><i class="fa-solid fa-check"></i> Yes</span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-600"><i class="fa-solid fa-check"></i> Yes</span>
                     {% else %}
-                    <span class="badge badge-secondary">No</span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">No</span>
                     {% endif %}
                 </span>
             </div>
@@ -141,73 +128,73 @@
     </div>
 
     <!-- Academic Information -->
-    <div class="info-card">
-        <div class="info-card-header green">
-            <i class="fa-solid fa-graduation-cap"></i>
-            <h3>Academic Information</h3>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4 text-white">
+            <i class="fa-solid fa-graduation-cap text-lg"></i>
+            <h3 class="text-sm font-bold uppercase tracking-wider">Academic Information</h3>
         </div>
-        <div class="info-card-body">
-            <div class="info-row">
-                <span class="label">Roll Number</span>
-                <span class="value">
+        <div class="divide-y divide-slate-100 px-6">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Roll Number</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.roll_number %}
-                    <span class="badge badge-secondary">{{ student.roll_number }}</span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ student.roll_number }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Register Number</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Register Number</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.register_number %}
-                    <span class="badge badge-primary">{{ student.register_number }}</span>
+                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-600">{{ student.register_number }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">College Email</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">College Email</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.college_email %}
-                    <a href="mailto:{{ student.college_email }}" class="email-link">
+                    <a href="mailto:{{ student.college_email }}" class="inline-flex items-center gap-1.5 text-indigo-500 transition hover:text-indigo-700">
                         <i class="fa-solid fa-envelope"></i> {{ student.college_email }}
                     </a>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Department</span>
-                <span class="value">{% if department %}{{ department.full_name }}{% else %}-{% endif %}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Department</span>
+                <span class="text-sm font-semibold text-slate-800">{% if department %}{{ department.full_name }}{% else %}-{% endif %}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Branch / Specialization</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Branch / Specialization</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.branch_specialization %}
-                    <span class="badge badge-primary">{{ student.branch_specialization }}</span>
+                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-600">{{ student.branch_specialization }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Academic Year (Joining)</span>
-                <span class="value">{{ student.academic_year_joining|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Academic Year (Joining)</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.academic_year_joining|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Date of Admission</span>
-                <span class="value">{{ student.date_of_admission|date:"d M Y"|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Date of Admission</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.date_of_admission|date:"d M Y"|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Admission Quota</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Admission Quota</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.mq_gq %}
-                    <span class="badge badge-info">{{ student.mq_gq }}</span>
+                    <span class="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-medium text-cyan-700">{{ student.mq_gq }}</span>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Hosteller Status</span>
-                <span class="value">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Hosteller Status</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.hosteller %}
-                    <span class="badge badge-green"><i class="fa-solid fa-check"></i> Hosteller</span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-600"><i class="fa-solid fa-check"></i> Hosteller</span>
                     {% else %}
-                    <span class="badge badge-orange"><i class="fa-solid fa-times"></i> Day Scholar</span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600"><i class="fa-solid fa-times"></i> Day Scholar</span>
                     {% endif %}
                 </span>
             </div>
@@ -215,322 +202,45 @@
     </div>
 
     <!-- Contact Information -->
-    <div class="info-card">
-        <div class="info-card-header blue">
-            <i class="fa-solid fa-phone"></i>
-            <h3>Contact Information</h3>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="flex items-center gap-3 bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-4 text-white">
+            <i class="fa-solid fa-phone text-lg"></i>
+            <h3 class="text-sm font-bold uppercase tracking-wider">Contact Information</h3>
         </div>
-        <div class="info-card-body">
-            <div class="info-row">
-                <span class="label">Mobile Number</span>
-                <span class="value">
+        <div class="divide-y divide-slate-100 px-6">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Mobile Number</span>
+                <span class="text-sm font-semibold text-slate-800">
                     {% if student.mobile_number %}
-                    <a href="tel:{{ student.mobile_number }}" class="phone-link">
+                    <a href="tel:{{ student.mobile_number }}" class="inline-flex items-center gap-1.5 text-emerald-500 transition hover:text-emerald-700">
                         <i class="fa-solid fa-phone"></i> {{ student.mobile_number }}
                     </a>
                     {% else %}-{% endif %}
                 </span>
             </div>
-            <div class="info-row">
-                <span class="label">Permanent Address</span>
-                <span class="value">{{ student.permanent_address|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Permanent Address</span>
+                <span class="text-sm font-semibold text-slate-800 text-right max-w-[60%]">{{ student.permanent_address|default:"-" }}</span>
             </div>
         </div>
     </div>
 
     <!-- Parent/Guardian Information -->
-    <div class="info-card">
-        <div class="info-card-header orange">
-            <i class="fa-solid fa-users"></i>
-            <h3>Parent/Guardian Information</h3>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
+            <i class="fa-solid fa-users text-lg"></i>
+            <h3 class="text-sm font-bold uppercase tracking-wider">Parent/Guardian Information</h3>
         </div>
-        <div class="info-card-body">
-            <div class="info-row">
-                <span class="label">Father's Name</span>
-                <span class="value">{{ student.father_name|default:"-" }}</span>
+        <div class="divide-y divide-slate-100 px-6">
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Father's Name</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.father_name|default:"-" }}</span>
             </div>
-            <div class="info-row">
-                <span class="label">Mother's Name</span>
-                <span class="value">{{ student.mother_name|default:"-" }}</span>
+            <div class="flex items-center justify-between py-3.5">
+                <span class="text-sm text-slate-500">Mother's Name</span>
+                <span class="text-sm font-semibold text-slate-800">{{ student.mother_name|default:"-" }}</span>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-    flex-wrap: wrap;
-}
-
-.breadcrumb-nav a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.breadcrumb-nav a:hover {
-    color: #2980b9;
-}
-
-.breadcrumb-nav i.fa-chevron-right {
-    font-size: 1rem;
-    color: #bdc3c7;
-}
-
-.breadcrumb-nav span {
-    color: #7f8c8d;
-}
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 1rem 2rem;
-    background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    color: #2c3e50;
-    font-size: 1.4rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    margin-bottom: 2rem;
-}
-
-.back-button:hover {
-    background: #3498db;
-    border-color: #3498db;
-    color: white;
-}
-
-/* Profile Header Card */
-.profile-header-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
-    padding: 3rem;
-    display: flex;
-    align-items: center;
-    gap: 2.5rem;
-    margin-bottom: 3rem;
-    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-}
-
-.profile-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 4rem;
-    background: rgba(255, 255, 255, 0.2);
-    border: 3px solid rgba(255, 255, 255, 0.3);
-}
-
-.profile-avatar.male {
-    color: #74b9ff;
-}
-
-.profile-avatar.female {
-    color: #fd79a8;
-}
-
-.profile-info h2 {
-    font-size: 2.8rem;
-    color: white;
-    margin-bottom: 0.5rem;
-}
-
-.profile-info p {
-    font-size: 1.4rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 1.5rem;
-}
-
-.profile-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    border-radius: 20px;
-    font-size: 1.2rem;
-    font-weight: 500;
-}
-
-.badge-dark {
-    background: rgba(0, 0, 0, 0.3);
-    color: white;
-}
-
-.badge-primary {
-    background: #3498db;
-    color: white;
-}
-
-.badge-secondary {
-    background: #ecf0f1;
-    color: #7f8c8d;
-}
-
-.badge-blue {
-    background: #e3f2fd;
-    color: #2196f3;
-}
-
-.badge-pink {
-    background: #fce4ec;
-    color: #e91e63;
-}
-
-.badge-green {
-    background: #e8f5e9;
-    color: #4caf50;
-}
-
-.badge-orange {
-    background: #fff3e0;
-    color: #ff9800;
-}
-
-.badge-red {
-    background: #ffebee;
-    color: #f44336;
-}
-
-.badge-info {
-    background: #e0f7fa;
-    color: #00838f;
-}
-
-/* Info Grid */
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
-}
-
-.info-card {
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.info-card-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.5rem 2rem;
-    background: #3498db;
-    color: white;
-}
-
-.info-card-header.green {
-    background: #27ae60;
-}
-
-.info-card-header.blue {
-    background: #2980b9;
-}
-
-.info-card-header.orange {
-    background: #f39c12;
-}
-
-.info-card-header i {
-    font-size: 2rem;
-}
-
-.info-card-header h3 {
-    font-size: 1.6rem;
-    font-weight: 600;
-}
-
-.info-card-body {
-    padding: 1.5rem 2rem;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.2rem 0;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-row .label {
-    font-size: 1.3rem;
-    color: #7f8c8d;
-}
-
-.info-row .value {
-    font-size: 1.4rem;
-    color: #2c3e50;
-    font-weight: 500;
-    text-align: right;
-}
-
-.phone-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #27ae60;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.phone-link:hover {
-    color: #1e8449;
-}
-
-.email-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.email-link:hover {
-    color: #2980b9;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .profile-header-card {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .profile-badges {
-        justify-content: center;
-    }
-    
-    .info-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .info-row .value {
-        text-align: left;
-    }
-}
-</style>
 {% endblock %}

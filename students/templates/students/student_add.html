@@ -4,194 +4,33 @@
 {% block page_subtitle %}Enter student details{% endblock %}
 
 {% block content %}
-<style>
-    .add-container {
-        max-width: 900px;
-        margin: 0 auto;
-    }
-    
-    .add-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 1.5rem;
-    }
-    
-    .card-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #f1f3f5;
-    }
-    
-    .card-header i {
-        font-size: 1.5rem;
-        color: #667eea;
-    }
-    
-    .card-header h3 {
-        margin: 0;
-        color: #2d3436;
-    }
-    
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-    }
-    
-    .form-group {
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-group.full-width {
-        grid-column: 1 / -1;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 0.4rem;
-        font-weight: 600;
-        color: #2d3436;
-        font-size: 0.9rem;
-    }
-    
-    .form-group label .required {
-        color: #e74c3c;
-    }
-    
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-        width: 100%;
-        padding: 0.7rem;
-        border: 2px solid #dfe6e9;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        transition: border-color 0.2s;
-        box-sizing: border-box;
-    }
-    
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-        outline: none;
-        border-color: #667eea;
-    }
-    
-    .form-group textarea {
-        resize: vertical;
-        min-height: 80px;
-    }
-    
-    .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding-top: 1.5rem;
-    }
-    
-    .checkbox-group input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-    }
-    
-    .checkbox-group label {
-        margin: 0;
-        cursor: pointer;
-    }
-    
-    .btn-row {
-        display: flex;
-        gap: 1rem;
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 2px solid #f1f3f5;
-    }
-    
-    .btn {
-        flex: 1;
-        padding: 1rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        text-decoration: none;
-        text-align: center;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-secondary {
-        background: #dfe6e9;
-        color: #2d3436;
-    }
-    
-    .btn:hover {
-        opacity: 0.9;
-    }
-    
-    .alert {
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-    }
-    
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-error { background: #f8d7da; color: #721c24; }
-    
-    .page-icon {
-        width: 70px;
-        height: 70px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 2rem;
-        margin: 0 auto 1.5rem;
-    }
-</style>
-
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
+        <div class="mb-4 rounded-xl border px-5 py-4 text-sm font-medium {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700{% else %}border-emerald-200 bg-emerald-50 text-emerald-700{% endif %}">
             {{ message }}
         </div>
     {% endfor %}
 {% endif %}
 
-<div class="add-container">
-    <div class="page-icon">
+<div class="mx-auto max-w-3xl">
+    <!-- Page Icon -->
+    <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 text-2xl text-white shadow-lg shadow-indigo-500/25">
         <i class="fa-solid fa-user-plus"></i>
     </div>
-    
+
     <form method="POST">
         {% csrf_token %}
-        
+
         <!-- Basic Information -->
-        <div class="add-card">
-            <div class="card-header">
-                <i class="fa-solid fa-user"></i>
-                <h3>Basic Information</h3>
+        <div class="mb-5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div class="flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-4 text-white">
+                <i class="fa-solid fa-user text-lg"></i>
+                <h3 class="text-sm font-bold uppercase tracking-wider">Basic Information</h3>
             </div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Department <span class="required">*</span></label>
-                    <select name="department_id" required {% if user_role == 'HOD' %}disabled{% endif %}>
+            <div class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Department <span class="text-red-400">*</span></label>
+                    <select name="department_id" required {% if user_role == 'HOD' %}disabled{% endif %} class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                         <option value="">Select Department</option>
                         {% for dept in departments %}
                         <option value="{{ dept.id }}" {% if department_id == dept.id|safe %}selected{% endif %}>
@@ -203,34 +42,34 @@
                     <input type="hidden" name="department_id" value="{{ department_id }}">
                     {% endif %}
                 </div>
-                <div class="form-group">
-                    <label>Student Name <span class="required">*</span></label>
-                    <input type="text" name="student_name" required placeholder="Full name">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Student Name <span class="text-red-400">*</span></label>
+                    <input type="text" name="student_name" required placeholder="Full name" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Register Number <span class="required">*</span></label>
-                    <input type="text" name="register_number" required placeholder="e.g., 2104001">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Register Number <span class="text-red-400">*</span></label>
+                    <input type="text" name="register_number" required placeholder="e.g., 2104001" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Roll Number <span class="required">*</span></label>
-                    <input type="text" name="roll_number" required placeholder="e.g., 21AI01">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Roll Number <span class="text-red-400">*</span></label>
+                    <input type="text" name="roll_number" required placeholder="e.g., 21AI01" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Gender <span class="required">*</span></label>
-                    <select name="gender" required>
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Gender <span class="text-red-400">*</span></label>
+                    <select name="gender" required class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                         <option value="">Select</option>
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
                         <option value="OTHER">Other</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Date of Birth</label>
-                    <input type="date" name="date_of_birth">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Date of Birth</label>
+                    <input type="date" name="date_of_birth" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Blood Group</label>
-                    <select name="blood_group">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Blood Group</label>
+                    <select name="blood_group" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                         <option value="">Select</option>
                         <option value="A+VE">A+VE</option>
                         <option value="A1+VE">A1+VE</option>
@@ -245,78 +84,78 @@
                         <option value="O-ve">O-ve</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Mobile Number</label>
-                    <input type="tel" name="mobile_number" placeholder="10-digit number">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Mobile Number</label>
+                    <input type="tel" name="mobile_number" placeholder="10-digit number" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>College Email</label>
-                    <input type="email" name="college_email" placeholder="student@college.ac.in">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">College Email</label>
+                    <input type="email" name="college_email" placeholder="student@college.ac.in" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>District</label>
-                    <input type="text" name="district" placeholder="Home district">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">District</label>
+                    <input type="text" name="district" placeholder="Home district" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
             </div>
         </div>
-        
+
         <!-- Academic Information -->
-        <div class="add-card">
-            <div class="card-header">
-                <i class="fa-solid fa-graduation-cap"></i>
-                <h3>Academic Information</h3>
+        <div class="mb-5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div class="flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4 text-white">
+                <i class="fa-solid fa-graduation-cap text-lg"></i>
+                <h3 class="text-sm font-bold uppercase tracking-wider">Academic Information</h3>
             </div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Academic Year (Joining)</label>
-                    <input type="text" name="academic_year_joining" value="{{ batch_year|default:'' }}" placeholder="e.g., 2024-28">
+            <div class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Academic Year (Joining)</label>
+                    <input type="text" name="academic_year_joining" value="{{ batch_year|default:'' }}" placeholder="e.g., 2024-28" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Date of Admission</label>
-                    <input type="date" name="date_of_admission">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Date of Admission</label>
+                    <input type="date" name="date_of_admission" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Branch / Specialization</label>
-                    <input type="text" name="branch_specialization" placeholder="e.g., AI&DS">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Branch / Specialization</label>
+                    <input type="text" name="branch_specialization" placeholder="e.g., AI&DS" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Admission Quota (MQ/GQ)</label>
-                    <input type="text" name="mq_gq" placeholder="MQ/GQ">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Admission Quota (MQ/GQ)</label>
+                    <input type="text" name="mq_gq" placeholder="MQ/GQ" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group checkbox-group">
-                    <input type="checkbox" name="hosteller" id="hosteller">
-                    <label for="hosteller">Hosteller</label>
+                <div class="flex items-center gap-2 pt-4">
+                    <input type="checkbox" name="hosteller" id="hosteller" class="h-5 w-5 cursor-pointer accent-violet-600">
+                    <label for="hosteller" class="cursor-pointer text-sm font-semibold text-slate-700">Hosteller</label>
                 </div>
             </div>
         </div>
-        
+
         <!-- Parent Information -->
-        <div class="add-card">
-            <div class="card-header">
-                <i class="fa-solid fa-users"></i>
-                <h3>Parent/Guardian Information</h3>
+        <div class="mb-5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div class="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
+                <i class="fa-solid fa-users text-lg"></i>
+                <h3 class="text-sm font-bold uppercase tracking-wider">Parent/Guardian Information</h3>
             </div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Father's Name</label>
-                    <input type="text" name="father_name" placeholder="Father's full name">
+            <div class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Father's Name</label>
+                    <input type="text" name="father_name" placeholder="Father's full name" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
-                <div class="form-group">
-                    <label>Mother's Name</label>
-                    <input type="text" name="mother_name" placeholder="Mother's full name">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Mother's Name</label>
+                    <input type="text" name="mother_name" placeholder="Mother's full name" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition focus:border-violet-400 focus:outline-none">
                 </div>
             </div>
         </div>
-        
-        <div class="btn-row">
-            <a href="{% url 'students:department_list' %}" class="btn btn-secondary">
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 border-t border-slate-100 pt-6">
+            <a href="{% url 'students:department_list' %}" class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
                 <i class="fa-solid fa-arrow-left"></i> Cancel
             </a>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30">
                 <i class="fa-solid fa-plus"></i> Add Student
             </button>
         </div>
     </form>
 </div>
-
 {% endblock %}

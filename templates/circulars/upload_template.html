@@ -3,312 +3,12 @@
 {% block page_title %}Circular Template{% endblock %}
 {% block page_subtitle %}Upload your institutional letterhead template{% endblock %}
 
-{% block extra_css %}
-<style>
-.template-page {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-.template-info-card {
-    background: linear-gradient(135deg, #fff9db 0%, #fef3c7 100%);
-    border: 1px solid #fcd34d;
-    border-radius: 16px;
-    padding: 2.5rem;
-    margin-bottom: 3rem;
-}
-
-.template-info-card h3 {
-    font-size: 1.8rem;
-    color: #92400e;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.template-info-card p {
-    font-size: 1.4rem;
-    color: #78350f;
-    line-height: 1.7;
-    margin-bottom: 0.5rem;
-}
-
-.template-info-card ul {
-    margin: 1rem 0;
-    padding-left: 2rem;
-}
-
-.template-info-card li {
-    font-size: 1.3rem;
-    color: #78350f;
-    margin-bottom: 0.5rem;
-}
-
-.upload-section {
-    background: white;
-    border-radius: 16px;
-    padding: 3rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    margin-bottom: 3rem;
-}
-
-.upload-section h3 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 2rem;
-    font-weight: 600;
-}
-
-.form-group {
-    margin-bottom: 2rem;
-}
-
-.form-group label {
-    display: block;
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.8rem;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"] {
-    width: 100%;
-    padding: 1.2rem 1.5rem;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    font-size: 1.4rem;
-    color: #2c3e50;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #f1c40f;
-}
-
-.form-group .help-text {
-    font-size: 1.2rem;
-    color: #95a5a6;
-    margin-top: 0.5rem;
-}
-
-.file-upload-area {
-    border: 2px dashed #bdc3c7;
-    border-radius: 16px;
-    padding: 4rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    background: #fafafa;
-    position: relative;
-}
-
-.file-upload-area:hover {
-    border-color: #f1c40f;
-    background: #fff9db;
-}
-
-.file-upload-area.has-file {
-    border-color: #27ae60;
-    background: #d5f4e6;
-}
-
-.file-upload-area i {
-    font-size: 4rem;
-    color: #bdc3c7;
-    margin-bottom: 1.5rem;
-    display: block;
-}
-
-.file-upload-area.has-file i {
-    color: #27ae60;
-}
-
-.file-upload-area p {
-    font-size: 1.5rem;
-    color: #7f8c8d;
-    margin-bottom: 0.5rem;
-}
-
-.file-upload-area .file-name {
-    font-size: 1.3rem;
-    color: #27ae60;
-    font-weight: 600;
-    margin-top: 1rem;
-}
-
-.file-upload-area input[type="file"] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.margin-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-
-.btn-row {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 2rem;
-}
-
-.btn {
-    padding: 1.2rem 2.5rem;
-    border-radius: 10px;
-    font-size: 1.4rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem;
-    transition: all 0.3s;
-    border: none;
-    text-decoration: none;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(241, 196, 15, 0.4);
-}
-
-.btn-secondary {
-    background: white;
-    color: #7f8c8d;
-    border: 2px solid #ecf0f1;
-}
-
-.btn-secondary:hover {
-    background: #f8f9fa;
-    color: #2c3e50;
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
-}
-
-/* Current Template Preview */
-.current-template {
-    background: white;
-    border-radius: 16px;
-    padding: 3rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    margin-bottom: 3rem;
-}
-
-.current-template h3 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.current-template .template-meta {
-    font-size: 1.3rem;
-    color: #95a5a6;
-    margin-bottom: 2rem;
-}
-
-.template-preview {
-    border: 1px solid #ecf0f1;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 2rem;
-    max-height: 500px;
-    display: flex;
-    justify-content: center;
-    background: #f8f9fa;
-}
-
-.template-preview img {
-    max-width: 100%;
-    max-height: 500px;
-    object-fit: contain;
-}
-
-.template-details {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.detail-badge {
-    background: #f0f0f0;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1.3rem;
-    color: #2c3e50;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.detail-badge i {
-    color: #f39c12;
-}
-
-.status-active {
-    background: #d5f4e6;
-    color: #27ae60;
-}
-
-/* Messages */
-.alert {
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.alert-success {
-    background: #d5f4e6;
-    color: #27ae60;
-    border: 1px solid #a8e6cf;
-}
-
-.alert-error {
-    background: #fdeaea;
-    color: #e74c3c;
-    border: 1px solid #f8c2c2;
-}
-
-.alert-warning {
-    background: #fff9db;
-    color: #92400e;
-    border: 1px solid #fcd34d;
-}
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="template-page">
+<div class="max-w-3xl mx-auto">
 
     {% if messages %}
     {% for message in messages %}
-    <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}">
+    <div class="flex items-center gap-3 px-5 py-4 rounded-2xl mb-4 text-sm font-medium {% if message.tags == 'error' %}bg-red-50 border border-red-100 text-red-600{% elif message.tags == 'warning' %}bg-amber-50 border border-amber-100 text-amber-700{% else %}bg-emerald-50 border border-emerald-100 text-emerald-600{% endif %}">
         <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}"></i>
         {{ message }}
     </div>
@@ -317,51 +17,55 @@
 
     {% if not active_template %}
     <!-- Info card when no template exists -->
-    <div class="template-info-card">
-        <h3><i class="fa-solid fa-circle-info"></i> Template Required</h3>
-        <p>Before you can generate circulars, you must upload your institutional letterhead template.</p>
-        <p>Your template should include:</p>
-        <ul>
-            <li><strong>College logo</strong> and institution name at the top</li>
-            <li><strong>Header details</strong> (address, contact info, etc.)</li>
-            <li><strong>Principal's signature</strong> at the bottom corner</li>
-            <li>Leave the <strong>middle area blank</strong> — the circular content will be filled there</li>
+    <div class="bg-amber-50 border border-amber-200 rounded-3xl p-8 mb-8">
+        <h3 class="text-base font-extrabold text-amber-800 flex items-center gap-2 mb-3">
+            <i class="fa-solid fa-circle-info text-amber-500"></i> Template Required
+        </h3>
+        <p class="text-sm text-amber-700 leading-relaxed mb-2">Before you can generate circulars, you must upload your institutional letterhead template.</p>
+        <p class="text-sm text-amber-700 mb-2">Your template should include:</p>
+        <ul class="list-disc pl-5 space-y-1 mb-2">
+            <li class="text-sm text-amber-700"><strong>College logo</strong> and institution name at the top</li>
+            <li class="text-sm text-amber-700"><strong>Header details</strong> (address, contact info, etc.)</li>
+            <li class="text-sm text-amber-700"><strong>Principal's signature</strong> at the bottom corner</li>
+            <li class="text-sm text-amber-700">Leave the <strong>middle area blank</strong> — the circular content will be filled there</li>
         </ul>
-        <p>Once uploaded, this template will be used for all future circulars until you replace it.</p>
+        <p class="text-sm text-amber-700">Once uploaded, this template will be used for all future circulars until you replace it.</p>
     </div>
     {% endif %}
 
     {% if active_template %}
     <!-- Current Template Preview -->
-    <div class="current-template">
-        <h3><i class="fa-solid fa-file-image" style="color: #f39c12; margin-right: 0.5rem;"></i> Current Template</h3>
-        <p class="template-meta">{{ active_template.name }} · Uploaded {{ active_template.updated_at|date:"d M Y, h:i A" }}</p>
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 mb-8">
+        <h3 class="text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-2 mb-1">
+            <i class="fa-solid fa-file-image text-amber-500"></i> Current Template
+        </h3>
+        <p class="text-sm text-slate-400 mb-6">{{ active_template.name }} · Uploaded {{ active_template.updated_at|date:"d M Y, h:i A" }}</p>
 
-        <div class="template-preview">
-            <img src="{{ active_template.template_image.url }}" alt="Current circular template">
+        <div class="border border-slate-100 rounded-2xl overflow-hidden mb-6 max-h-[500px] flex justify-center bg-slate-50">
+            <img src="{{ active_template.template_image.url }}" alt="Current circular template" class="max-w-full max-h-[500px] object-contain">
         </div>
 
-        <div class="template-details">
-            <div class="detail-badge status-active">
+        <div class="flex flex-wrap gap-3 mb-6">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg">
                 <i class="fa-solid fa-circle-check"></i> Active
-            </div>
-            <div class="detail-badge">
-                <i class="fa-solid fa-arrow-down"></i> Top margin: {{ active_template.content_top_margin }}mm
-            </div>
-            <div class="detail-badge">
-                <i class="fa-solid fa-arrow-up"></i> Bottom margin: {{ active_template.content_bottom_margin }}mm
-            </div>
+            </span>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-lg">
+                <i class="fa-solid fa-arrow-down text-amber-500"></i> Top margin: {{ active_template.content_top_margin }}mm
+            </span>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-lg">
+                <i class="fa-solid fa-arrow-up text-amber-500"></i> Bottom margin: {{ active_template.content_bottom_margin }}mm
+            </span>
         </div>
 
-        <div class="btn-row">
-            <a href="{% url 'circular_gen' %}" class="btn btn-primary">
-                <i class="fa-solid fa-arrow-left"></i> Back to Circulars
+        <div class="flex gap-3">
+            <a href="{% url 'circular_gen' %}" class="inline-flex items-center gap-2 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/30">
+                <i class="fa-solid fa-arrow-left text-xs"></i> Back to Circulars
             </a>
-            <form method="POST" action="{% url 'circular_delete_template' %}" style="display:inline;" 
+            <form method="POST" action="{% url 'circular_delete_template' %}" style="display:inline;"
                   onsubmit="return confirm('Remove this template? You will need to upload a new one before generating circulars.');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger">
-                    <i class="fa-solid fa-trash"></i> Remove Template
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/30">
+                    <i class="fa-solid fa-trash text-xs"></i> Remove Template
                 </button>
             </form>
         </div>
@@ -369,49 +73,53 @@
     {% endif %}
 
     <!-- Upload Section -->
-    <div class="upload-section">
-        <h3>{% if active_template %}Replace Template{% else %}Upload Template{% endif %}</h3>
-        
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 mb-8">
+        <h3 class="text-lg font-extrabold tracking-tight text-slate-900 mb-6">{% if active_template %}Replace Template{% else %}Upload Template{% endif %}</h3>
+
         <form method="POST" enctype="multipart/form-data" action="{% url 'circular_upload_template' %}">
             {% csrf_token %}
-            
-            <div class="form-group">
-                <label>Template Name</label>
-                <input type="text" name="name" placeholder="e.g., SIET Official Letterhead 2026" 
-                       value="{{ active_template.name|default:'' }}">
+
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Template Name</label>
+                <input type="text" name="name" placeholder="e.g., SIET Official Letterhead 2026"
+                       value="{{ active_template.name|default:'' }}"
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all">
             </div>
 
-            <div class="form-group">
-                <label>Template Image</label>
-                <div class="file-upload-area" id="dropZone">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <p>Click or drag to upload your letterhead template</p>
-                    <p style="font-size: 1.2rem; color: #95a5a6;">PNG or JPG, max 5MB · A4 size recommended (2480×3508px)</p>
-                    <div class="file-name" id="fileName" style="display:none;"></div>
-                    <input type="file" name="template_image" id="templateFile" accept="image/png,image/jpeg,image/jpg">
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Template Image</label>
+                <div id="dropZone" class="relative border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50/50 bg-slate-50">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 block mb-3" id="uploadIcon"></i>
+                    <p class="text-sm text-slate-500 mb-1" id="uploadText">Click or drag to upload your letterhead template</p>
+                    <p class="text-xs text-slate-400">PNG or JPG, max 5MB · A4 size recommended (2480×3508px)</p>
+                    <div class="text-sm font-bold text-emerald-600 mt-3 hidden" id="fileName"></div>
+                    <input type="file" name="template_image" id="templateFile" accept="image/png,image/jpeg,image/jpg"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                 </div>
             </div>
 
-            <div class="margin-inputs">
-                <div class="form-group">
-                    <label>Content Top Margin (mm)</label>
-                    <input type="number" name="content_top_margin" value="{{ active_template.content_top_margin|default:72 }}" min="10" max="150">
-                    <p class="help-text">Distance from top where content starts (below header/logo area). Default: 72mm</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Content Top Margin (mm)</label>
+                    <input type="number" name="content_top_margin" value="{{ active_template.content_top_margin|default:72 }}" min="10" max="150"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all">
+                    <p class="text-xs text-slate-400 mt-1.5">Distance from top where content starts. Default: 72mm</p>
                 </div>
-                <div class="form-group">
-                    <label>Content Bottom Margin (mm)</label>
-                    <input type="number" name="content_bottom_margin" value="{{ active_template.content_bottom_margin|default:45 }}" min="10" max="150">
-                    <p class="help-text">Distance from bottom where content ends (above signature area). Default: 45mm</p>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Content Bottom Margin (mm)</label>
+                    <input type="number" name="content_bottom_margin" value="{{ active_template.content_bottom_margin|default:45 }}" min="10" max="150"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all">
+                    <p class="text-xs text-slate-400 mt-1.5">Distance from bottom where content ends. Default: 45mm</p>
                 </div>
             </div>
 
-            <div class="btn-row">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-upload"></i> {% if active_template %}Replace Template{% else %}Upload Template{% endif %}
+            <div class="flex gap-3 pt-4">
+                <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/30">
+                    <i class="fa-solid fa-upload text-xs"></i> {% if active_template %}Replace Template{% else %}Upload Template{% endif %}
                 </button>
                 {% if active_template %}
-                <a href="{% url 'circular_gen' %}" class="btn btn-secondary">
-                    <i class="fa-solid fa-times"></i> Cancel
+                <a href="{% url 'circular_gen' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold rounded-2xl transition-all">
+                    <i class="fa-solid fa-times text-xs"></i> Cancel
                 </a>
                 {% endif %}
             </div>
@@ -420,32 +128,33 @@
 </div>
 
 <script>
-// File upload preview
 const fileInput = document.getElementById('templateFile');
 const dropZone = document.getElementById('dropZone');
 const fileNameDisplay = document.getElementById('fileName');
+const uploadIcon = document.getElementById('uploadIcon');
+const uploadText = document.getElementById('uploadText');
 
 fileInput.addEventListener('change', function() {
     if (this.files.length > 0) {
         fileNameDisplay.textContent = this.files[0].name;
-        fileNameDisplay.style.display = 'block';
-        dropZone.classList.add('has-file');
-        dropZone.querySelector('i').className = 'fa-solid fa-file-image';
-        dropZone.querySelector('p').textContent = 'File selected:';
+        fileNameDisplay.classList.remove('hidden');
+        dropZone.classList.add('border-emerald-400', 'bg-emerald-50/50');
+        dropZone.classList.remove('border-slate-300', 'bg-slate-50');
+        uploadIcon.className = 'fa-solid fa-file-image text-4xl text-emerald-500 block mb-3';
+        uploadText.textContent = 'File selected:';
     }
 });
 
-// Drag and drop styling
 dropZone.addEventListener('dragover', function(e) {
     e.preventDefault();
-    this.style.borderColor = '#f1c40f';
-    this.style.background = '#fff9db';
+    this.classList.add('border-amber-400', 'bg-amber-50/50');
+    this.classList.remove('border-slate-300', 'bg-slate-50');
 });
 
 dropZone.addEventListener('dragleave', function() {
     if (!fileInput.files.length) {
-        this.style.borderColor = '#bdc3c7';
-        this.style.background = '#fafafa';
+        this.classList.remove('border-amber-400', 'bg-amber-50/50');
+        this.classList.add('border-slate-300', 'bg-slate-50');
     }
 });
 
