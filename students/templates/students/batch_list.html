@@ -5,196 +5,68 @@
 
 {% block content %}
 <!-- Breadcrumb Navigation -->
-<div class="breadcrumb-nav">
-    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:department_list' %}">Departments</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <span>{{ department.name }}</span>
-</div>
+<nav class="mb-8 flex items-center gap-2 text-sm">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 transition hover:text-indigo-500"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:department_list' %}" class="text-slate-400 transition hover:text-indigo-500">Departments</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <span class="font-medium text-slate-600">{{ department.name }}</span>
+</nav>
 
 <!-- User Info Bar -->
-<div class="ai-status">
-    <div class="status-dot"></div>
-    <span style="font-size: 1.4rem; color: #2c3e50;">
-        <strong>{{ user_name }}</strong> &nbsp;|&nbsp; 
-        <span style="color: #7f8c8d;">{{ user_role }}</span>
-    </span>
-    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+<div class="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-4 shadow-sm">
+    <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]"></span>
+    <span class="text-sm font-bold text-slate-800">{{ user_name }}</span>
+    <span class="text-sm text-slate-400">|</span>
+    <span class="text-sm text-slate-500">{{ user_role }}</span>
+    <span class="ml-auto flex items-center gap-2 text-sm text-slate-400">
         <i class="fa-solid fa-users-line"></i> {{ batches|length }} Active Batches
     </span>
 </div>
 
 <!-- Back Button -->
-<a href="{% url 'students:department_list' %}" class="back-button">
-    <i class="fa-solid fa-arrow-left"></i> Back to Departments
+<a href="{% url 'students:department_list' %}" class="mb-8 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Back to Departments
 </a>
 
 <!-- Batches Grid -->
-<div class="features-grid" style="margin-top: 2rem;">
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-8">
     {% for batch in batches %}
-    <div class="feature-card batch-card" onclick="window.location.href='{% url 'students:student_list' department.id batch.batch_year %}'">
-        <div class="icon-container" style="background-color: #ede7f6;">
-            <i class="fa-solid fa-users" style="color: #673ab7;"></i>
+    <div class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50" onclick="window.location.href='{% url 'students:student_list' department.id batch.batch_year %}'">
+        <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50">
+            <i class="fa-solid fa-users text-xl text-violet-500"></i>
         </div>
-        <h3>Batch {{ batch.batch_year }}</h3>
-        <p>Academic Year Range</p>
-        
-        <div class="batch-stats">
-            <div class="stat-box">
-                <span class="stat-value total">{{ batch.student_count }}</span>
-                <span class="stat-title">Total Students</span>
+        <h3 class="text-lg font-bold tracking-tight text-slate-900">Batch {{ batch.batch_year }}</h3>
+        <p class="mt-1 text-sm text-slate-500">Academic Year Range</p>
+
+        <div class="mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4">
+            <div class="text-center">
+                <span class="block text-xl font-extrabold text-slate-800">{{ batch.student_count }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total</span>
             </div>
-            <div class="stat-box">
-                <span class="stat-value male">{{ batch.male_count }}</span>
-                <span class="stat-title">Male</span>
+            <div class="text-center">
+                <span class="block text-xl font-extrabold text-blue-500">{{ batch.male_count }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Male</span>
             </div>
-            <div class="stat-box">
-                <span class="stat-value female">{{ batch.female_count }}</span>
-                <span class="stat-title">Female</span>
+            <div class="text-center">
+                <span class="block text-xl font-extrabold text-pink-500">{{ batch.female_count }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Female</span>
             </div>
         </div>
-        
-        <div class="card-btn" style="color: #673ab7;">
-            View Students <i class="fa-solid fa-arrow-right"></i>
+
+        <div class="mt-6 inline-flex items-center gap-2 text-sm font-bold text-violet-500 transition-all group-hover:gap-3">
+            View Students <i class="fa-solid fa-arrow-right text-xs"></i>
         </div>
     </div>
     {% empty %}
-    <div class="empty-state">
-        <i class="fa-solid fa-users-slash"></i>
-        <h3>No Batches Found</h3>
-        <p>There are no active batches for {{ department.full_name }}.</p>
-        <a href="{% url 'students:department_list' %}" class="back-link">
-            <i class="fa-solid fa-arrow-left"></i> Back to Departments
+    <div class="col-span-full flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-20 text-center">
+        <i class="fa-solid fa-users-slash mb-4 text-5xl text-slate-200"></i>
+        <h3 class="text-xl font-bold text-slate-800">No Batches Found</h3>
+        <p class="mt-2 text-sm text-slate-500">There are no active batches for {{ department.full_name }}.</p>
+        <a href="{% url 'students:department_list' %}" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-indigo-500 hover:text-indigo-600">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Departments
         </a>
     </div>
     {% endfor %}
 </div>
-
-<style>
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-}
-
-.breadcrumb-nav a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.breadcrumb-nav a:hover {
-    color: #2980b9;
-}
-
-.breadcrumb-nav i.fa-chevron-right {
-    font-size: 1rem;
-    color: #bdc3c7;
-}
-
-.breadcrumb-nav span {
-    color: #7f8c8d;
-}
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 1rem 2rem;
-    background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    color: #2c3e50;
-    font-size: 1.4rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.back-button:hover {
-    background: #3498db;
-    border-color: #3498db;
-    color: white;
-}
-
-.batch-card:hover {
-    border-top-color: #673ab7;
-}
-
-.batch-stats {
-    display: flex;
-    gap: 1.5rem;
-    margin: 2rem 0;
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-radius: 12px;
-}
-
-.stat-box {
-    flex: 1;
-    text-align: center;
-    padding: 1rem;
-}
-
-.stat-value {
-    display: block;
-    font-size: 2.4rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.stat-value.total { color: #2c3e50; }
-.stat-value.male { color: #3498db; }
-.stat-value.female { color: #e91e63; }
-
-.stat-title {
-    font-size: 1.1rem;
-    color: #95a5a6;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 6rem 2rem;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.empty-state i {
-    font-size: 5rem;
-    color: #bdc3c7;
-    margin-bottom: 2rem;
-}
-
-.empty-state h3 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-
-.empty-state p {
-    font-size: 1.4rem;
-    color: #7f8c8d;
-    margin-bottom: 2rem;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #3498db;
-    text-decoration: none;
-    font-size: 1.4rem;
-}
-
-.back-link:hover {
-    color: #2980b9;
-}
-</style>
 {% endblock %}

@@ -3,211 +3,184 @@
 {% block title %}Analysis Results - {{ analyzed_doc.original_filename }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-5">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'students:pdf_analysis_home' %}">PDF Analysis</a></li>
-            <li class="breadcrumb-item active">Results</li>
-        </ol>
-    </nav>
+<div class="mb-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-8">
+        <a href="{% url 'students:pdf_analysis_home' %}" class="text-indigo-500 hover:text-indigo-700 transition-colors">PDF Analysis</a>
+        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+        <span class="text-slate-400">Results</span>
+    </div>
 
     <!-- Document Header -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-2">
-                <i class="bi bi-file-pdf text-danger"></i> {{ analyzed_doc.original_filename }}
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf text-red-400"></i> {{ analyzed_doc.original_filename }}
             </h1>
-            <p class="text-muted">
-                {{ analyzed_doc.document_type|upper }} | 
-                Batch: {{ analyzed_doc.program_semester.batch_year }} | 
+            <p class="text-sm text-slate-400">
+                {{ analyzed_doc.document_type|upper }} |
+                Batch: {{ analyzed_doc.program_semester.batch_year }} |
                 Semester: {{ analyzed_doc.program_semester.number }}
             </p>
         </div>
-        <div class="col-md-4 text-end">
-            <span class="badge bg-{% if analyzed_doc.status == 'completed' %}success{% elif analyzed_doc.status == 'failed' %}danger{% else %}warning{% endif %} p-2">
-                <i class="bi bi-circle-fill"></i> {{ analyzed_doc.get_status_display|upper }}
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full {% if analyzed_doc.status == 'completed' %}bg-emerald-50 text-emerald-600{% elif analyzed_doc.status == 'failed' %}bg-red-50 text-red-600{% else %}bg-amber-50 text-amber-600{% endif %}">
+                <i class="fa-solid fa-circle text-[6px]"></i> {{ analyzed_doc.get_status_display|upper }}
             </span>
             {% if analyzed_doc.is_indexed %}
-            <span class="badge bg-info p-2 ms-2">
-                <i class="bi bi-lightning"></i> RAG Indexed
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-sky-50 text-sky-600">
+                <i class="fa-solid fa-bolt"></i> RAG Indexed
             </span>
             {% endif %}
         </div>
     </div>
 
     <!-- Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center border-primary">
-                <div class="card-body">
-                    <h5 class="text-primary">{{ stats.total_records }}</h5>
-                    <p class="text-muted mb-0">Total Records</p>
-                </div>
-            </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-2xl font-extrabold text-indigo-500 mb-0.5">{{ stats.total_records }}</p>
+            <p class="text-xs text-slate-400 font-medium">Total Records</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <h5 class="text-success">{{ stats.verified_records }}</h5>
-                    <p class="text-muted mb-0">Verified</p>
-                </div>
-            </div>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-2xl font-extrabold text-emerald-500 mb-0.5">{{ stats.verified_records }}</p>
+            <p class="text-xs text-slate-400 font-medium">Verified</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-warning">
-                <div class="card-body">
-                    <h5 class="text-warning">{{ stats.pending_verification }}</h5>
-                    <p class="text-muted mb-0">Pending Review</p>
-                </div>
-            </div>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-2xl font-extrabold text-amber-500 mb-0.5">{{ stats.pending_verification }}</p>
+            <p class="text-xs text-slate-400 font-medium">Pending Review</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-info">
-                <div class="card-body">
-                    <h5 class="text-info">{{ analyzed_doc.total_pages }}</h5>
-                    <p class="text-muted mb-0">Pages</p>
-                </div>
-            </div>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-2xl font-extrabold text-sky-500 mb-0.5">{{ analyzed_doc.total_pages }}</p>
+            <p class="text-xs text-slate-400 font-medium">Pages</p>
         </div>
     </div>
 
     <!-- Document Info -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h6 class="mb-0">Document Information</h6>
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h3 class="text-sm font-extrabold text-slate-800">Document Information</h3>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <p><strong>Uploaded:</strong> {{ analyzed_doc.upload_date|date:"M d, Y H:i" }}</p>
-                </div>
-                <div class="col-md-4">
-                    <p><strong>Processed:</strong> {% if analyzed_doc.processed_date %}{{ analyzed_doc.processed_date|date:"M d, Y H:i" }}{% else %}<span class="text-muted">Processing...</span>{% endif %}</p>
-                </div>
-                <div class="col-md-4">
-                    <p><strong>File Size:</strong> {% if analyzed_doc.file_size %}{{ analyzed_doc.file_size|filesizeformat }}{% else %}-{% endif %}</p>
-                </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <p><span class="font-bold text-slate-700">Uploaded:</span> <span class="text-slate-500">{{ analyzed_doc.upload_date|date:"M d, Y H:i" }}</span></p>
+                <p><span class="font-bold text-slate-700">Processed:</span> <span class="text-slate-500">{% if analyzed_doc.processed_date %}{{ analyzed_doc.processed_date|date:"M d, Y H:i" }}{% else %}Processing...{% endif %}</span></p>
+                <p><span class="font-bold text-slate-700">File Size:</span> <span class="text-slate-500">{% if analyzed_doc.file_size %}{{ analyzed_doc.file_size|filesizeformat }}{% else %}—{% endif %}</span></p>
             </div>
         </div>
     </div>
 
     <!-- RAG Search Box -->
     {% if analyzed_doc.is_indexed %}
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h6 class="mb-0"><i class="bi bi-lightning"></i> Search Document with AI</h6>
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-indigo-50">
+            <h3 class="text-sm font-extrabold text-sky-700 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> Search Document with AI</h3>
         </div>
-        <div class="card-body">
-            <form id="rag-search-form" class="mb-3">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="rag-query" placeholder="Search for marks, subjects, grades, etc..." required>
-                    <button class="btn btn-info" type="submit">
-                        <i class="bi bi-search"></i> Search
+        <div class="p-6">
+            <form id="rag-search-form" class="mb-4">
+                <div class="flex gap-2">
+                    <input type="text" id="rag-query" placeholder="Search for marks, subjects, grades, etc..." required
+                           class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-50 transition-all">
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-3 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-2xl transition-all">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i> Search
                     </button>
                 </div>
             </form>
-            <div id="rag-results" class="mt-3" style="display:none;">
-                <h6>Search Results:</h6>
-                <div id="rag-results-list"></div>
+            <div id="rag-results" class="hidden mt-4">
+                <h4 class="text-sm font-bold text-slate-700 mb-3">Search Results:</h4>
+                <div id="rag-results-list" class="space-y-2"></div>
             </div>
         </div>
     </div>
     {% endif %}
 
     <!-- Extracted Results Table -->
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h6 class="mb-0">Extracted Data</h6>
-                </div>
-                <div class="col-md-6 text-end">
-                    <a href="{% url 'students:search_documents' %}" class="btn btn-sm btn-outline-secondary">
-                        All Documents
-                    </a>
-                </div>
-            </div>
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-slate-800">Extracted Data</h3>
+            <a href="{% url 'students:search_documents' %}" class="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                All Documents
+            </a>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Roll No</th>
-                        <th>Student Name</th>
-                        <th>Subject</th>
-                        <th>Internal 1</th>
-                        <th>Internal 2</th>
-                        <th>Internal 3</th>
-                        <th>End Sem</th>
-                        <th>Grade</th>
-                        <th>Confidence</th>
-                        <th>Status</th>
-                        <th>Action</th>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-slate-50/80">
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Roll No</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Subject</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Int 1</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Int 2</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Int 3</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">End Sem</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Grade</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Conf.</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-slate-100">
                     {% for result in results %}
-                    <tr>
-                        <td>
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="px-4 py-3 text-sm">
                             {% if result.student %}
-                            <a href="{% url 'students:student_detail' student_id=result.student.id %}">
+                            <a href="{% url 'students:student_detail' student_id=result.student.id %}" class="text-indigo-500 hover:text-indigo-700 font-medium transition-colors">
                                 {{ result.student.roll_number }}
                             </a>
                             {% else %}
-                            <em class="text-muted">Not matched</em>
+                            <em class="text-slate-400 text-xs">Not matched</em>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="px-4 py-3 text-sm text-slate-700">
                             {% if result.student %}
                             {{ result.student.student_name }}
                             {% else %}
-                            <em class="text-muted">Unknown</em>
+                            <em class="text-slate-400 text-xs">Unknown</em>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="px-4 py-3 text-sm">
                             {% if result.subject %}
-                            <small><strong>{{ result.subject.code }}</strong></small><br>
-                            <small class="text-muted">{{ result.subject.name|truncatewords:4 }}</small>
+                            <span class="font-bold text-slate-700">{{ result.subject.code }}</span><br>
+                            <span class="text-xs text-slate-400">{{ result.subject.name|truncatewords:4 }}</span>
                             {% else %}
-                            <em class="text-muted">Not matched</em>
+                            <em class="text-slate-400 text-xs">Not matched</em>
                             {% endif %}
                         </td>
-                        <td>{{ result.internal1|default:"-" }}</td>
-                        <td>{{ result.internal2|default:"-" }}</td>
-                        <td>{{ result.internal3|default:"-" }}</td>
-                        <td>{{ result.end_sem_marks|default:"-" }}</td>
-                        <td>
+                        <td class="px-4 py-3 text-sm text-center text-slate-600">{{ result.internal1|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-slate-600">{{ result.internal2|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-slate-600">{{ result.internal3|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-medium text-slate-700">{{ result.end_sem_marks|default:"—" }}</td>
+                        <td class="px-4 py-3 text-center">
                             {% if result.grade %}
-                            <span class="badge bg-secondary">{{ result.grade }}</span>
+                            <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 text-slate-600">{{ result.grade }}</span>
                             {% else %}
-                            <span class="text-muted">-</span>
+                            <span class="text-slate-300">—</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <small>{{ result.confidence_score }}%</small>
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-xs font-medium text-slate-500">{{ result.confidence_score }}%</span>
                         </td>
-                        <td>
+                        <td class="px-4 py-3 text-center">
                             {% if result.is_verified %}
-                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Verified</span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-600"><i class="fa-solid fa-circle-check text-[8px]"></i> Verified</span>
                             {% else %}
-                            <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Pending</span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-600"><i class="fa-solid fa-circle-exclamation text-[8px]"></i> Pending</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{% url 'students:verify_result' result_id=result.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> Review
+                        <td class="px-4 py-3 text-center">
+                            <a href="{% url 'students:verify_result' result_id=result.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-500 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition-colors">
+                                <i class="fa-solid fa-pen-to-square text-[10px]"></i> Review
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" class="text-center py-4">
-                            <p class="text-muted mb-0">
+                        <td colspan="11" class="text-center py-12">
+                            <p class="text-slate-400 text-sm">
                                 {% if analyzed_doc.status == 'processing' %}
-                                <i class="bi bi-hourglass-split"></i> Processing document...
+                                <i class="fa-solid fa-spinner fa-spin mr-1"></i> Processing document...
                                 {% elif analyzed_doc.status == 'failed' %}
-                                <i class="bi bi-exclamation-triangle"></i> An error occurred during processing.
-                                <br><small class="text-muted">{{ analyzed_doc.error_message }}</small>
+                                <i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> An error occurred during processing.
+                                <br><span class="text-xs text-slate-400 mt-1">{{ analyzed_doc.error_message }}</span>
                                 {% else %}
                                 No results found.
                                 {% endif %}
@@ -218,34 +191,26 @@
                 </tbody>
             </table>
         </div>
-        <div class="card-footer text-muted text-center">
+        <div class="px-6 py-3 border-t border-slate-100 text-center text-xs text-slate-400">
             Page {{ results.number }} of {{ results.paginator.num_pages }}
         </div>
     </div>
 
     <!-- Pagination -->
     {% if results.has_other_pages %}
-    <nav class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if results.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ results.previous_page_number }}">Previous</a>
-            </li>
-            {% endif %}
-            
-            {% for num in results.paginator.page_range %}
-            <li class="page-item {% if results.number == num %}active{% endif %}">
-                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-            </li>
-            {% endfor %}
-            
-            {% if results.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ results.next_page_number }}">Next</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+    <div class="flex justify-center gap-1 mt-6">
+        {% if results.has_previous %}
+        <a href="?page={{ results.previous_page_number }}" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Previous</a>
+        {% endif %}
+
+        {% for num in results.paginator.page_range %}
+        <a href="?page={{ num }}" class="px-3.5 py-2 text-sm font-medium rounded-xl transition-colors {% if results.number == num %}bg-indigo-500 text-white border border-indigo-500{% else %}text-slate-600 bg-white border border-slate-200 hover:bg-slate-50{% endif %}">{{ num }}</a>
+        {% endfor %}
+
+        {% if results.has_next %}
+        <a href="?page={{ results.next_page_number }}" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Next</a>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 
@@ -272,15 +237,11 @@ document.getElementById('rag-search-form').addEventListener('submit', function(e
             resultsList.innerHTML = '';
             data.results.forEach((result, index) => {
                 const div = document.createElement('div');
-                div.className = 'card mb-2';
-                div.innerHTML = `
-                    <div class="card-body">
-                        <p class="mb-0"><small>${result}</small></p>
-                    </div>
-                `;
+                div.className = 'bg-slate-50 rounded-xl p-4 border border-slate-100';
+                div.innerHTML = `<p class="text-sm text-slate-600 mb-0">${result}</p>`;
                 resultsList.appendChild(div);
             });
-            document.getElementById('rag-results').style.display = 'block';
+            document.getElementById('rag-results').classList.remove('hidden');
         }
     })
     .catch(error => console.error('Error:', error));

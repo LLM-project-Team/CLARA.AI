@@ -4,49 +4,20 @@
 {% block page_subtitle %}You don't have permission to access this page{% endblock %}
 
 {% block content %}
-<style>
-    .denied-container {
-        text-align: center;
-        padding: 3rem;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-    
-    .denied-icon {
-        font-size: 5rem;
-        color: #e74c3c;
-        margin-bottom: 1.5rem;
-    }
-    
-    .denied-message {
-        font-size: 1.2rem;
-        color: #636e72;
-        margin-bottom: 2rem;
-    }
-    
-    .btn-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 1rem 2rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-</style>
-
-<div class="denied-container">
-    <div class="denied-icon">
-        <i class="fa-solid fa-lock"></i>
+<div class="flex flex-col items-center justify-center py-20 px-6 text-center">
+    <!-- Icon -->
+    <div class="w-24 h-24 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mb-8">
+        <i class="fa-solid fa-lock text-red-400 text-4xl"></i>
     </div>
-    <h2>Access Denied</h2>
-    <p class="denied-message">
+
+    <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-3">Access Denied</h2>
+    <p class="text-slate-500 text-sm max-w-sm mb-10 leading-relaxed">
         {{ message|default:"You don't have the required permissions to access this feature." }}
     </p>
-    <a href="{% url 'pages:home' %}" class="btn-back">
-        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+
+    <a href="{% url 'pages:home' %}"
+       class="inline-flex items-center gap-2 px-8 py-4 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Back to Dashboard
     </a>
 </div>
 {% endblock %}

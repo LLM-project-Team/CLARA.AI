@@ -1,27 +1,53 @@
 {% extends 'base.html' %}
 
-{% block page_title %}Academic Analytics - {{ department.name }}{% endblock %}
+{% block page_title %}Academic Analytics — {{ department.name }}{% endblock %}
 {% block page_subtitle %}Select a batch year to view semester analytics{% endblock %}
 
 {% block content %}
 
-<div class="analytics-section">
-    <h3>Active Batches in {{ department.name }}</h3>
-    <div class="batch-grid">
-        {% for batch in batches %}
-        <div class="batch-card" onclick="window.location.href='{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}'">
-            <h4>Batch {{ batch.batch_year }}</h4>
-            <p>Academic Year {{ batch.batch_year }}</p>
-            <div class="card-btn">
-                View Semesters <i class="fa-solid fa-arrow-right"></i>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+<!-- Breadcrumb -->
+<nav class="mb-8 flex items-center gap-2 text-sm flex-wrap">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 hover:text-indigo-500 transition"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:academic_analytics' %}" class="text-slate-400 hover:text-indigo-500 transition">Academic Analytics</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <span class="text-slate-600 font-medium">{{ department.name }}</span>
+</nav>
+
+<!-- Section header -->
+<div class="mb-6">
+    <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Active Batches — {{ department.name }}</h2>
+    <p class="mt-1 text-sm text-slate-400">Choose a batch to explore semester-level analytics.</p>
 </div>
 
-<div class="analytics-section">
-    <a href="{% url 'students:academic_analytics' %}" class="btn btn-secondary">
+<!-- Batch Grid -->
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for batch in batches %}
+    <div class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50"
+         onclick="window.location.href='{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}'">
+        <div class="mb-4 flex items-center gap-3">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+                <i class="fa-solid fa-calendar-days text-base text-indigo-500"></i>
+            </div>
+            <h4 class="text-base font-bold text-slate-900">Batch {{ batch.batch_year }}</h4>
+        </div>
+        <p class="mb-5 text-xs text-slate-400">Academic Year {{ batch.batch_year }}</p>
+        <div class="flex items-center gap-2 text-sm font-semibold text-indigo-500 transition-all group-hover:gap-3">
+            View Semesters <i class="fa-solid fa-arrow-right text-xs"></i>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+        <i class="fa-solid fa-calendar-xmark mb-4 text-5xl text-slate-200"></i>
+        <h3 class="text-lg font-bold text-slate-700">No Batches Found</h3>
+        <p class="mt-1 text-sm text-slate-400">No batch years have been configured for {{ department.name }}.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Back nav -->
+<div class="mt-8">
+    <a href="{% url 'students:academic_analytics' %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
         <i class="fa-solid fa-arrow-left"></i> Back to All Departments
     </a>
 </div>

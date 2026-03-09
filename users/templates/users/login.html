@@ -3,110 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduAdmin | Secure Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Admin AI | Secure Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'ui-sans-serif', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 16px; }
-
-        body {
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            padding: 50px;
-            width: 460px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            color: white;
-            text-align: center;
-        }
-
-        h2 { font-size: 26px; font-weight: 600; }
-        p  { font-size: 15px; }
-
-        .input-group { position: relative; margin-bottom: 24px; text-align: left; }
-
-        .input-group i {
-            position: absolute; left: 18px; top: 50%;
-            transform: translateY(-50%); color: rgba(255, 255, 255, 0.7);
-            font-size: 15px;
-        }
-
-        .input-group input {
-            width: 100%; padding: 15px 18px 15px 54px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px; color: white; outline: none;
-            font-size: 15px;
-            transition: 0.3s;
-        }
-
-        .input-group input::placeholder { color: rgba(255, 255, 255, 0.7); font-size: 15px; }
-
-        .input-group input:focus {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.8);
-        }
-
-        .login-btn {
-            width: 100%; padding: 15px;
-            background: white; color: #e73c7e;
-            border: none; border-radius: 12px;
-            font-size: 15px; font-weight: 600; cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    </style>
 </head>
-<body>
+<body class="bg-slate-50 font-sans min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
 
-    <div class="login-card">
-        <h2 style="margin-bottom: 10px;">Welcome Back</h2>
-        <p style="opacity: 0.8; margin-bottom: 36px;">Login to access the dashboard</p>
+    <!-- Soft blurred background orbs -->
+    <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-300 to-teal-200 opacity-25 blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-[-15%] right-[-5%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-violet-300 to-sky-200 opacity-20 blur-3xl pointer-events-none"></div>
 
-        <form method="POST" action="">
-            {% csrf_token %}
+    <div class="relative z-10 w-full max-w-md">
+        <!-- Brand -->
+        <div class="flex items-center justify-center gap-3 mb-10">
+            <div class="w-11 h-11 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
+            </div>
+            <span class="text-slate-800 text-xl font-extrabold tracking-tight">Admin AI</span>
+        </div>
 
-            {% if form.errors %}
-                <div style="background: rgba(255,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 18px; font-size: 14px;">
-                    <i class="fa-solid fa-circle-exclamation"></i> Invalid Email or Password
+        <!-- Login card -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-10 md:p-12">
+            <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Welcome back</h2>
+            <p class="text-slate-500 text-sm mb-10">Sign in to access the dashboard</p>
+
+            <form method="POST" action="">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 rounded-2xl px-5 py-4 mb-8 text-sm font-medium">
+                    <i class="fa-solid fa-circle-exclamation text-red-400"></i>
+                    Invalid email or password
                 </div>
-            {% endif %}
+                {% endif %}
 
-            <div class="input-group">
-                <input type="email" name="username" placeholder="Email Address" required autofocus>
-                <i class="fa-regular fa-envelope"></i>
-            </div>
+                <div class="space-y-5 mb-8">
+                    <div class="relative">
+                        <i class="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="email" name="username" placeholder="Email address" required autofocus
+                               class="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all duration-200">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="password" name="password" placeholder="Password" required
+                               class="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all duration-200">
+                    </div>
+                </div>
 
-            <div class="input-group">
-                <input type="password" name="password" placeholder="Password" required>
-                <i class="fa-solid fa-lock"></i>
-            </div>
+                <button type="submit"
+                        class="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 flex items-center justify-center gap-2">
+                    Sign In <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
 
-            <button type="submit" class="login-btn">
-                Sign In <i class="fa-solid fa-arrow-right"></i>
-            </button>
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+        </div>
 
-            <input type="hidden" name="next" value="{{ next }}">
-        </form>
+        <p class="text-center text-slate-400 text-xs mt-8">Academic Administration System &middot; Powered by AI</p>
     </div>
 
 </body>

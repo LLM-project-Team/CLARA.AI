@@ -4,304 +4,70 @@
 {% block page_subtitle %}Choose a batch to view marks & semester analytics{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb Navigation -->
-<div class="breadcrumb-nav">
-    <a href="{% url 'pages:home' %}"><i class="fa-solid fa-house"></i> Home</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <a href="{% url 'students:academic_analytics' %}">Academic Analytics</a>
-    <i class="fa-solid fa-chevron-right"></i>
-    <span>{{ department.name }}</span>
-</div>
+<!-- Breadcrumb -->
+<nav class="mb-8 flex items-center gap-2 text-sm flex-wrap">
+    <a href="{% url 'pages:home' %}" class="text-slate-400 hover:text-indigo-500 transition"><i class="fa-solid fa-house"></i> Home</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <a href="{% url 'students:academic_analytics' %}" class="text-slate-400 hover:text-indigo-500 transition">Academic Analytics</a>
+    <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+    <span class="text-slate-600 font-medium">{{ department.name }}</span>
+</nav>
 
-<!-- User Info Bar -->
-<div class="ai-status">
-    <div class="status-dot"></div>
-    <span style="font-size: 1.4rem; color: #2c3e50;">
-        <strong>{{ user_name }}</strong> &nbsp;|&nbsp;
-        <span style="color: #7f8c8d;">{{ user_role }}</span>
-    </span>
-    <span style="margin-left: auto; font-size: 1.3rem; color: #7f8c8d;">
+<!-- Info Bar -->
+<div class="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-4 shadow-sm">
+    <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span></span>
+    <span class="text-sm font-semibold text-slate-900">{{ user_name }}</span>
+    <span class="text-sm text-slate-400">|</span>
+    <span class="text-sm text-slate-400">{{ user_role }}</span>
+    <span class="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
         <i class="fa-solid fa-users-line"></i> {{ batches|length }} Active Batches
     </span>
 </div>
 
 <!-- Back Button -->
-<a href="{% url 'students:academic_analytics' %}" class="back-button">
+<a href="{% url 'students:academic_analytics' %}" class="mb-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
     <i class="fa-solid fa-arrow-left"></i> Back to Departments
 </a>
 
 <!-- Batches Grid -->
-<div class="features-grid" style="margin-top: 2rem;">
+<div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
     {% for batch in batches %}
-    <div class="feature-card batch-card" onclick="window.location.href='{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}'">
-        <div class="icon-container" style="background-color: #ede7f6;">
-            <i class="fa-solid fa-users" style="color: #673ab7;"></i>
+    <div class="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50"
+         onclick="window.location.href='{% url 'students:analytics_batch_semesters' department.id batch.batch_year %}'">
+        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50">
+            <i class="fa-solid fa-users text-xl text-violet-500"></i>
         </div>
-        <h3>Batch {{ batch.batch_year }}</h3>
-        <p>Academic Year Range</p>
+        <h3 class="text-lg font-bold tracking-tight text-slate-900">Batch {{ batch.batch_year }}</h3>
+        <p class="mt-1 text-sm text-slate-500">Academic Year Range</p>
 
-        <div class="batch-stats">
-            <div class="stat-box">
-                <span class="stat-value total">{{ batch.student_count }}</span>
-                <span class="stat-title">Total Students</span>
+        <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <span class="block text-xl font-extrabold text-indigo-600">{{ batch.student_count }}</span>
+                <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Total</span>
             </div>
-            <div class="stat-box">
-                <span class="stat-value male">{{ batch.male_count }}</span>
-                <span class="stat-title">Male</span>
+            <div class="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <span class="block text-xl font-extrabold text-sky-500">{{ batch.male_count }}</span>
+                <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Male</span>
             </div>
-            <div class="stat-box">
-                <span class="stat-value female">{{ batch.female_count }}</span>
-                <span class="stat-title">Female</span>
+            <div class="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <span class="block text-xl font-extrabold text-pink-500">{{ batch.female_count }}</span>
+                <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Female</span>
             </div>
         </div>
 
-        <div class="card-btn" style="color: #673ab7;">
-            View Semesters <i class="fa-solid fa-arrow-right"></i>
+        <div class="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-violet-500 transition-all group-hover:gap-3">
+            View Semesters <i class="fa-solid fa-arrow-right text-xs"></i>
         </div>
     </div>
     {% empty %}
-    <div class="empty-state">
-        <i class="fa-solid fa-users-slash"></i>
-        <h3>No Batches Found</h3>
-        <p>There are no active batches for {{ department.name }}.</p>
-        <a href="{% url 'students:academic_analytics' %}" class="back-link">
+    <div class="col-span-full flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+        <i class="fa-solid fa-users-slash mb-4 text-5xl text-slate-200"></i>
+        <h3 class="text-lg font-bold text-slate-700">No Batches Found</h3>
+        <p class="mt-2 text-sm text-slate-400">There are no active batches for {{ department.name }}.</p>
+        <a href="{% url 'students:academic_analytics' %}" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-5 py-2.5 text-sm font-medium text-indigo-500 transition hover:bg-indigo-50">
             <i class="fa-solid fa-arrow-left"></i> Back to Departments
         </a>
     </div>
     {% endfor %}
 </div>
-
-<style>
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    font-size: 1.4rem;
-}
-
-.breadcrumb-nav a {
-    color: #3498db;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.breadcrumb-nav a:hover {
-    color: #2980b9;
-}
-
-.breadcrumb-nav i.fa-chevron-right {
-    font-size: 1rem;
-    color: #bdc3c7;
-}
-
-.breadcrumb-nav span {
-    color: #7f8c8d;
-}
-
-.ai-status {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.status-dot {
-    width: 12px;
-    height: 12px;
-    background: #4ade80;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: #ecf0f1;
-    color: #2c3e50;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-}
-
-.back-button:hover {
-    background: #d5dbdb;
-    transform: translateX(-2px);
-}
-
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
-}
-
-.feature-card {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: 1px solid #ecf0f1;
-    position: relative;
-    overflow: hidden;
-}
-
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-}
-
-.icon-container {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-}
-
-.feature-card h3 {
-    font-size: 1.8rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.feature-card p {
-    color: #7f8c8d;
-    margin-bottom: 1.5rem;
-    font-size: 1rem;
-}
-
-.batch-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.stat-box {
-    text-align: center;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #ecf0f1;
-}
-
-.stat-value {
-    display: block;
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.stat-value.total { color: #667eea; }
-.stat-value.male { color: #3498db; }
-.stat-value.female { color: #e74c3c; }
-
-.stat-title {
-    font-size: 0.9rem;
-    color: #7f8c8d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 500;
-}
-
-.card-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.8rem 1.5rem;
-    background: transparent;
-    border: 2px solid currentColor;
-    border-radius: 8px;
-    color: inherit;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    width: 100%;
-}
-
-.card-btn:hover {
-    background: currentColor;
-    color: white !important;
-    transform: translateY(-2px);
-}
-
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    border: 1px solid #ecf0f1;
-}
-
-.empty-state i {
-    font-size: 4rem;
-    color: #bdc3c7;
-    margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-    color: #2c3e50;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-}
-
-.empty-state p {
-    color: #7f8c8d;
-    margin-bottom: 2rem;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 0.8rem 1.5rem;
-    border: 1px solid #667eea;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.back-link:hover {
-    background: #667eea;
-    color: white;
-}
-</style>
-
 {% endblock %}

@@ -389,19 +389,19 @@ PDF Upload (via Chat UI or PDF Analysis page)
 │                                                            │
 │  Key Algorithm: _page_rows() + _find_header_row()          │
 │  → Groups words by Y-coordinate into rows                  │
-│  → Identifies subject-code header row via regex             │
-│  → Maps each column X-position to a subject code            │
-│  → Detects sub-columns (CIA/Max/Att%) to isolate marks      │
-│  → Uses statistical bucketing to distinguish marks from     │
-│    attendance percentages (Pass A/B/C algorithm)            │
+│  → Identifies subject-code header row via regex            │
+│  → Maps each column X-position to a subject code           │
+│  → Detects sub-columns (CIA/Max/Att%) to isolate marks     │
+│  → Uses statistical bucketing to distinguish marks from    │
+│    attendance percentages (Pass A/B/C algorithm)           │
 └────────────────────────┬───────────────────────────────────┘
                          │
                          ▼
 ┌────────────────────────────────────────────────────────────┐
-│  STEP 2: LLM METADATA ENRICHMENT                          │
+│  STEP 2: LLM METADATA ENRICHMENT                           │
 │  ────────────────────────────────                          │
 │  Send header text + legend text to Ollama (llama3.1:8b)    │
-│  LLM extracts:                                            │
+│  LLM extracts:                                             │
 │  • mark_type: "internal" or "end_semester"                 │
 │  • internal_number: 1, 2, or 3                             │
 │  • subjects: [{code, name, credits}]                       │
@@ -416,14 +416,14 @@ PDF Upload (via Chat UI or PDF Analysis page)
 │  Subject names resolved with 3-tier priority:              │
 │                                                            │
 │  P1: Document legend table (highest trust)                 │
-│      → e.g., "21AD101 — Fundamentals of AI" from the PDF  │
+│      → e.g., "21AD101 — Fundamentals of AI" from the PDF   │
 │                                                            │
 │  P2: Coordinate parser names (from inline headers)         │
-│      → Cleaned: teacher names, noise words stripped         │
-│      → Validated: hallucination detection applied           │
+│      → Cleaned: teacher names, noise words stripped        │
+│      → Validated: hallucination detection applied          │
 │                                                            │
 │  P3: LLM-generated names (only fills gaps)                 │
-│      → Guardrailed: cleaned + hallucination-checked         │
+│      → Guardrailed: cleaned + hallucination-checked        │
 │                                                            │
 │  AI NEVER auto-creates subjects in the database.           │
 │  Unknown codes are reported; user must add them first.     │
@@ -467,7 +467,7 @@ User types a question in the Analytics Chat Bar
 │  2.  Top N / bottom N / class topper                │
 │  3.  Average / mean                                 │
 │  4.  How many / count                               │
-│  5.  Pass rate / fail rate                           │
+│  5.  Pass rate / fail rate                          │
 │  6.  Chart / graph / visualization                  │
 │  7.  All marks for a subject                        │
 │  8.  Marks of a specific student                    │
