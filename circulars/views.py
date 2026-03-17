@@ -51,6 +51,8 @@ CIRCULAR_TEMPLATES = {
 
                                     CIRCULAR
 
+Subject: Holiday Declaration - {occasion}
+
 We are pleased to inform you that our Institute will observe a holiday on {holiday_date} on the occasion of {occasion}. Please note that the Mess will be closed during this holiday period.
 
 Regular Classes and activities will resume on the next working day.
@@ -66,6 +68,8 @@ We wish you all a happy and prosperous {occasion}. May this festive season bring
         'template': """Ref : {circular_no}                                         {date}
 
                                     CIRCULAR
+
+Subject: Examination Schedule - {academic_year}
 
 This is to inform all students that the {exam_type} Examinations for the Academic Year {academic_year} will be held from {start_date} to {end_date}.
 
@@ -89,6 +93,8 @@ All students are wished the very best for their examinations.
 
                                     CIRCULAR
 
+Subject: {meeting_type} Meeting
+
 All {recipients} are hereby informed that a {meeting_type} Meeting is scheduled as follows:
 
     Date    : {meeting_date}
@@ -109,6 +115,8 @@ All concerned are requested to attend the meeting punctually and come prepared w
         'template': """Ref : {circular_no}                                         {date}
 
                                     CIRCULAR
+
+Subject: Disciplinary Notice
 
 This circular is issued to bring to the notice of all students and staff the importance of maintaining discipline and decorum within the Institute premises.
 
@@ -131,6 +139,8 @@ Full cooperation from all is expected in maintaining a healthy and productive ac
 
                                     CIRCULAR
 
+Subject: General Announcement
+
 {content}
 
 {copy_to}"""
@@ -142,6 +152,8 @@ Full cooperation from all is expected in maintaining a healthy and productive ac
         'template': """Ref : {circular_no}                                         {date}
 
                                     CIRCULAR
+
+Subject: {event_name} - Event Announcement
 
 We are pleased to inform all students and faculty members that {event_name} will be organised by the Institute as per the details given below:
 
@@ -578,10 +590,22 @@ def generate_ai_content(request):
         # ── Compose circular content (header/signature are in the template image) ──
         user_has_template = CircularTemplate.get_active_template(request.user) is not None
         
+        # Generate subject line from title if available
+        subject_line = ""
+        if not title:
+            title = prompt.strip()[:77] + ("..." if len(prompt) > 77 else "")
+        elif len(title) > 80:
+            title = title[:77] + "..."
+        
+        # Create subject line with title (will be made bold by rendering function)
+        if title:
+            subject_line = f"Subject: {title}\n"
+        
         if user_has_template:
             generated_content = (
                 f"Ref : {circular_no}                                         {current_date}\n\n"
                 f"                                    CIRCULAR\n\n"
+                f"{subject_line}\n"
                 f"{ai_body_clean}\n\n"
                 f"{COPY_TO_BLOCK}"
             )
@@ -592,16 +616,11 @@ def generate_ai_content(request):
                 f"Principal\n\n"
                 f"Ref : {circular_no}                                         {current_date}\n\n"
                 f"                                    CIRCULAR\n\n"
+                f"{subject_line}\n"
                 f"{ai_body_clean}\n\n"
                 f"                                                                PRINCIPAL\n\n"
                 f"{COPY_TO_BLOCK}"
             )
-        
-        # Use extracted title, fallback to prompt
-        if not title:
-            title = prompt.strip()[:77] + ("..." if len(prompt) > 77 else "")
-        elif len(title) > 80:
-            title = title[:77] + "..."
         
         return JsonResponse({
             'success': True,

@@ -23,10 +23,14 @@
 .circ-content { position:relative; z-index:1; font-family:'Times New Roman','Georgia',serif; font-size:14.5px; line-height:1.65; color:#111; flex:1; width:100%; min-height:950px; }
 .circ-pre-header { text-align:center; white-space:pre-wrap; margin-bottom:0.5em; line-height:1.4; }
 .circ-meta-row { display:flex; justify-content:space-between; align-items:flex-start; }
-.circ-heading { text-align:center; font-weight:bold; font-size:15.5px; margin:0.6em 0; text-decoration:underline; }
+.circ-ref, .circ-date { font-weight:bold; }
+.circ-subject { margin:0.6em 0; }
+.circ-subject strong { font-weight:bold; }
+.circ-heading { text-align:center; font-weight:bold; font-size:18px; margin:0.6em 0; text-decoration:underline; }
 .circ-body { min-height:350px; outline:none; white-space:pre-wrap; word-wrap:break-word; padding:0.2em 0; }
 .circ-body:focus { outline:none; }
 .circ-copyto { white-space:pre-wrap; margin-top:0.3em; }
+.circ-copyto strong { font-weight:bold; }
 .circ-signature { text-align:right; margin:1.5em 0; padding-right:2em; }
 .editor-footer { background:#1e293b; padding:0.7rem 1.5rem; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#64748b; }
 
@@ -49,17 +53,188 @@
 
 /* Print */
 @media print {
-    .sidebar, .main-content .header-bar, .circ-topbar,
-    .editor-toolbar, .editor-footer, .prompt-section,
-    .welcome-section, .template-grid { display:none !important; }
-    .main-content { margin-left:0 !important; padding:0 !important; }
-    body, html { background:white !important; }
-    .a4-preview { background:white !important; padding:0 !important; display:block !important; }
-    .a4-paper { box-shadow:none !important; width:100% !important; min-height:auto !important; padding:0 !important; }
-    .editor-textarea, .circ-content { min-height:auto !important; overflow:visible !important; }
-    .circ-body { min-height:auto !important; }
-    @page { size:A4 portrait; margin:1.5cm; }
-    .a4-template-bg { position:absolute !important; top:0 !important; left:0 !important; width:100% !important; height:100% !important; display:block !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    /* Reset all elements to defaults first */
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    
+    /* Configure page */
+    @page { 
+        size:A4 portrait; 
+        margin:0; 
+    }
+    
+    /* Hide all non-content elements */
+    .sidebar, .navbar, .main-nav, nav, header, 
+    .circ-topbar, .editor-toolbar, .editor-footer, 
+    .prompt-section, .welcome-section, .template-grid,
+    .ai-loading, #aiLoadingIndicator,
+    button, .btn, .ed-btn, input, textarea { 
+        display:none !important; 
+    }
+    
+    /* Reset body and html */
+    html { 
+        width:100%; 
+        height:100%;
+        margin:0;
+        padding:0;
+        background:white;
+    }
+    
+    body { 
+        width:100%; 
+        height:100%;
+        margin:0;
+        padding:0;
+        background:white;
+    }
+    
+    /* Hide main content wrappers but keep content visible */
+    .main-content { 
+        margin:0 !important; 
+        padding:0 !important; 
+        width:100% !important;
+    }
+    
+    .container { 
+        margin:0 !important; 
+        padding:0 !important;
+    }
+    
+    /* Show editor section as print container */
+    .editor-section { 
+        display:block !important;
+        width:100% !important;
+        height:auto !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+        overflow:visible !important;
+        background:white !important;
+        border:none !important;
+        margin:0 !important;
+        padding:0 !important;
+        page-break-after:avoid;
+    }
+    
+    /* A4 preview container */
+    .a4-preview { 
+        background:white !important; 
+        padding:0 !important; 
+        margin:0 !important;
+        display:block !important;
+        overflow:visible !important;
+        width:100% !important;
+        height:auto !important;
+    }
+    
+    /* A4 paper - the actual printable area */
+    .a4-paper { 
+        width:210mm !important;
+        height:297mm !important;
+        box-shadow:none !important;
+        border:none !important;
+        margin:0 !important;
+        padding:72px 80px !important;
+        display:block !important;
+        position:relative !important;
+        overflow:visible !important;
+        background:white !important;
+        page-break-after:always;
+    }
+    
+    .a4-paper.has-template {
+        padding:0 !important;
+        background-image:none !important;
+    }
+    
+    /* Template background image - layer behind content */
+    .a4-template-bg { 
+        position:absolute !important; 
+        top:0 !important; 
+        left:0 !important; 
+        width:100% !important;
+        height:100% !important;
+        display:block !important; 
+        z-index:0 !important;
+        object-fit:cover !important;
+    }
+    
+    /* Main content container within paper */
+    .circ-content { 
+        display:block !important;
+        position:relative !important;
+        z-index:1 !important;
+        width:100% !important;
+        height:auto !important;
+        margin:0 !important;
+        padding:72px 80px !important;
+        font-family:'Times New Roman','Georgia',serif !important;
+        font-size:14px !important;
+        line-height:1.6 !important;
+        color:#000 !important;
+        overflow:visible !important;
+        visibility:visible !important;
+        opacity:1 !important;
+    }
+    
+    .a4-paper.has-template .circ-content {
+        padding-top:72mm !important;
+        padding-bottom:45mm !important;
+        padding-left:80px !important;
+        padding-right:80px !important;
+    }
+    
+    /* All circular content sections */
+    .circ-pre-header,
+    .circ-meta-row,
+    .circ-heading,
+    .circ-body,
+    .circ-signature,
+    .circ-copyto { 
+        display:block !important;
+        margin:0 !important;
+        padding:0 !important;
+        width:auto !important;
+        height:auto !important;
+        background:transparent !important;
+        page-break-inside:avoid !important;
+        white-space:pre-wrap !important;
+        word-wrap:break-word !important;
+        overflow:visible !important;
+    }
+    
+    .circ-pre-header { 
+        text-align:center !important;
+        margin-bottom:0.5em !important;
+    }
+    
+    .circ-meta-row {
+        display:flex !important;
+        justify-content:space-between !important;
+        margin-bottom:0.3em !important;
+    }
+    
+    .circ-heading { 
+        text-align:center !important;
+        font-weight:bold !important;
+        text-decoration:underline !important;
+        margin:0.6em 0 !important;
+    }
+    
+    .circ-body { 
+        white-space:pre-wrap !important;
+        word-wrap:break-word !important;
+        min-height:auto !important;
+    }
+    
+    .circ-signature { 
+        text-align:right !important;
+        margin-top:1.5em !important;
+    }
+    
+    .circ-copyto { 
+        white-space:pre-wrap !important;
+        margin-top:0.3em !important;
+    }
 }
 </style>
 {% endblock %}
@@ -93,10 +268,18 @@
             <div class="px-4 py-3 border-b border-slate-100 text-sm font-extrabold text-slate-800">Recent Circulars</div>
             <div class="max-h-72 overflow-y-auto p-1.5">
                 {% for item in history %}
-                <a href="{% url 'circular_view' item.id %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                    <i class="fa-regular fa-file-lines text-amber-400 shrink-0"></i>
-                    <span class="truncate">{{ item.title|truncatechars:30 }}</span>
-                </a>
+                <div class="flex items-center justify-between group px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                    <a href="{% url 'circular_view' item.id %}" class="flex-1 flex items-center gap-3">
+                        <i class="fa-regular fa-file-lines text-amber-400 shrink-0"></i>
+                        <span class="truncate text-sm text-slate-600 group-hover:text-slate-900">{{ item.title|truncatechars:30 }}</span>
+                    </a>
+                    <button type="button" onclick="if(confirm('Delete this circular?')) { document.getElementById('deleteForm{{ item.id }}').submit(); }" class="ml-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                    <form id="deleteForm{{ item.id }}" method="POST" action="{% url 'circular_delete' item.id %}" style="display:none;">
+                        {% csrf_token %}
+                    </form>
+                </div>
                 {% empty %}
                 <div class="text-center py-8 text-slate-400">
                     <i class="fa-regular fa-folder-open text-2xl block mb-2 text-slate-300"></i>
@@ -165,7 +348,7 @@
                 {% endif %}
                 <textarea name="content" id="contentHidden" style="display:none">{{ generated_content }}</textarea>
                 <div class="circ-content" id="circContent"
-                     {% if active_template %}style="padding-top: {{ active_template.content_top_margin }}mm; padding-bottom: {{ active_template.content_bottom_margin }}mm;"{% endif %}
+                     {% if active_template %}style="padding-top: {{ active_template.content_top_margin }}mm; padding-bottom: {{ active_template.content_bottom_margin }}mm; padding-left: 80px; padding-right: 80px;"{% else %}style="padding-left: 80px; padding-right: 80px;"{% endif %}
                      data-readonly="{% if view_mode %}true{% else %}false{% endif %}">
                 </div>
             </div>
@@ -285,6 +468,7 @@ function parseCircularContent(text) {
     const lines = text.split('\n');
     let preHeader = [];
     let ref = '', date = '';
+    let subject = '';
     let bodyLines = [];
     let copyToLines = [];
     let signature = '';
@@ -309,10 +493,26 @@ function parseCircularContent(text) {
         if (section === 'between') {
             if (trimmed === 'CIRCULAR') {
                 foundHeading = true;
-                section = 'body';
+                section = 'subject';
                 continue;
             }
             continue;
+        }
+
+        if (section === 'subject') {
+            if (trimmed.startsWith('Subject:')) {
+                subject = trimmed.substring(8).trim();
+                section = 'body';
+                continue;
+            } else if (trimmed === '') {
+                section = 'body';
+                continue;
+            } else {
+                // No subject line found, treat as body
+                section = 'body';
+                bodyLines.push(lines[i]);
+                continue;
+            }
         }
 
         if (section === 'body') {
@@ -338,6 +538,7 @@ function parseCircularContent(text) {
         preHeader: preHeader.join('\n').trim(),
         ref, date,
         hasHeading: foundHeading,
+        subject: subject,
         body: bodyLines.join('\n').trim(),
         signature,
         copyTo: copyToLines.join('\n').trim()
@@ -348,29 +549,69 @@ function renderCircularHTML(parsed, readonly) {
     let html = '';
 
     if (parsed.preHeader) {
-        html += `<div class="circ-pre-header">${escapeHtml(parsed.preHeader)}</div>`;
+        const preHeaderDiv = document.createElement('div');
+        preHeaderDiv.className = 'circ-pre-header';
+        preHeaderDiv.textContent = parsed.preHeader;
+        html += preHeaderDiv.outerHTML;
     }
 
     if (parsed.ref || parsed.date) {
-        html += `<div class="circ-meta-row">
-            <span class="circ-ref">${escapeHtml(parsed.ref)}</span>
-            <span class="circ-date">${escapeHtml(parsed.date)}</span>
-        </div>`;
+        const refSpan = document.createElement('span');
+        refSpan.className = 'circ-ref';
+        refSpan.innerHTML = `<strong>${escapeHtml(parsed.ref)}</strong>`;
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'circ-date';
+        dateSpan.innerHTML = `<strong>${escapeHtml(parsed.date)}</strong>`;
+        
+        const metaRow = document.createElement('div');
+        metaRow.className = 'circ-meta-row';
+        metaRow.appendChild(refSpan);
+        metaRow.appendChild(dateSpan);
+        
+        html += metaRow.outerHTML;
     }
 
     if (parsed.hasHeading) {
         html += `<div class="circ-heading">CIRCULAR</div>`;
     }
 
+    // Add Subject line if present
+    if (parsed.subject) {
+        const subjectDiv = document.createElement('div');
+        subjectDiv.className = 'circ-subject';
+        const subjectText = `Subject: ${parsed.subject}`;
+        // Create strong element for bold text
+        const strongEl = document.createElement('strong');
+        strongEl.textContent = subjectText;
+        subjectDiv.appendChild(strongEl);
+        html += subjectDiv.outerHTML;
+    }
+
     const editAttr = readonly ? '' : 'contenteditable="true"';
-    html += `<div class="circ-body" ${editAttr} id="circBodyEditor">${escapeHtml(parsed.body)}</div>`;
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'circ-body';
+    bodyDiv.id = 'circBodyEditor';
+    if (!readonly) {
+        bodyDiv.setAttribute('contenteditable', 'true');
+    }
+    bodyDiv.textContent = parsed.body;
+    html += bodyDiv.outerHTML;
 
     if (parsed.signature) {
-        html += `<div class="circ-signature">${escapeHtml(parsed.signature)}</div>`;
+        const sigDiv = document.createElement('div');
+        sigDiv.className = 'circ-signature';
+        sigDiv.textContent = parsed.signature;
+        html += sigDiv.outerHTML;
     }
 
     if (parsed.copyTo) {
-        html += `<div class="circ-copyto">${escapeHtml(parsed.copyTo)}</div>`;
+        const copyDiv = document.createElement('div');
+        copyDiv.className = 'circ-copyto';
+        // Make "Copy to:" bold
+        const copyToText = parsed.copyTo.replace(/^Copy to:/i, '<strong>Copy to:</strong>');
+        copyDiv.innerHTML = copyToText;
+        html += copyDiv.outerHTML;
     }
 
     return html;
@@ -401,6 +642,12 @@ function serializeCircularContent() {
     if (heading) {
         parts.push('');
         parts.push('                                    CIRCULAR');
+    }
+
+    const subject = content.querySelector('.circ-subject');
+    if (subject && subject.innerText.trim()) {
+        parts.push('');
+        parts.push(subject.innerText.trim());
     }
 
     const body = content.querySelector('.circ-body');
@@ -640,5 +887,23 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+/* Print handler - ensure content is visible when printing */
+window.addEventListener('beforeprint', function() {
+    const circContent = document.getElementById('circContent');
+    if (circContent) {
+        // Ensure contenteditable divs render their content
+        const editableDivs = circContent.querySelectorAll('[contenteditable]');
+        editableDivs.forEach(div => {
+            /* Force reflow to ensure content is rendered */
+            div.style.display = 'block';
+            void div.offsetHeight;
+        });
+    }
+});
+
+window.addEventListener('afterprint', function() {
+    /* Restore any temporary styles if needed */
+});
 </script>
 {% endblock %}
