@@ -212,6 +212,87 @@ circulars/
 | `event` | Event/function announcement |
 | `general` | Free-form announcement |
 
+#### 5.4.1 Circular Generation Backend Flow
+
+The circular generator is a server-rendered Django workflow backed by two models and a small set of views. It supports two generation modes:
+
+1. **Template-based quick generation** (holiday, exam, meeting, etc.)
+2. **AI-assisted generation** (LLM-generated body with a strict SIET format)
+
+The generated content is always saved in the database only when the user clicks **Save & Approve**.
+
+#### 5.4.2 Models Used
+
+**`CircularTemplate`** (letterhead image + margins)
+
+- Stores the uploaded template image (logo/header/signature).
+- One template is marked **active** per user at any time.
+- Provides `content_top_margin` and `content_bottom_margin` to control the printable text area in mm.
+
+**`Circular`** (saved circular text)
+
+- Stores the full circular text that includes:
+     - `Ref : ...` line
+     - `CIRCULAR` heading
+     - `Subject: ...` line
+     - Body content
+     - `Copy to:` block
+- Saved only on explicit approval by the user.
+
+#### 5.4.3 Views and Backend Logic
+
+**`upload_template()`**
+
+- Validates template image type and size.
+- Stores as `CircularTemplate` with margins.
+- Deactivates previous template for the same user.
+
+**`generator_view()`**
+
+- Loads recent history (last 10 circulars) from DB for the current user.
+- Ensures an active template exists; otherwise, redirects to upload.
+- If a template type is requested, generates a circular using the predefined format.
+- If `auto_holiday` is used, resolves festival dates using `utils.festival_dates`.
+
+**`generate_ai_content()`** (AJAX)
+
+- Calls the local LLM (Ollama) through `aa/llm_client.py`.
+- Uses a strict system prompt so the model returns a clean body only.
+- Injects:
+     - `Ref : ...` line
+     - `CIRCULAR` heading
+     - `Subject: <title>` line
+     - `Copy to:` block
+- Returns JSON with `content` and extracted `title`.
+
+**`save_circular()`**
+
+- Serializes the editor content into a single text blob.
+- Saves a new `Circular` record in the DB.
+- Redirects to the generator view, which reloads recent history from DB.
+
+**`delete_circular()`**
+
+- Deletes the selected `Circular` record in the DB.
+- Redirects to the generator view so Recent reflects DB state.
+
+#### 5.4.4 Rendering and Editor Behavior
+
+- `templates/circulars/generator.html` parses the stored text and renders structured sections.
+- Bold formatting is applied to:
+     - `Ref : ...` line
+     - Date
+     - `Subject: ...` line
+     - `Copy to:` label
+- The **Recent** dropdown is always a live reflection of DB records.
+- Deleting from Recent submits a POST to the delete endpoint and refreshes the list.
+
+#### 5.4.5 Print Output Rules
+
+- A strict print-only layout hides the UI and outputs only the A4 circular page.
+- The template image is positioned behind the content with `object-fit: cover`.
+- Content margins follow the template settings (top/bottom in mm, left/right fixed).
+
 ### 5.5 `staff` — Staff Directory Management
 
 ```
@@ -962,4 +1043,4 @@ OLLAMA_LIGHT_MODEL=llama3.2:3b
 
 > **CLARA.AI** — *Comprehensive LLM-powered Academic Resource Administrator.*
 >
-> Repository: [LLM-project-Team/CLARA](https://github.com/LLM-project-Team/CLARA.AI)
+> Repository: [LLM-project-Team/CLARA](https://github.com/LLM-project-Team/CLARA.AI  )
