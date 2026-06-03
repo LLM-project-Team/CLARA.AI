@@ -168,6 +168,44 @@ _CREDIT_SUBCOL_LABELS = {
     'CR', 'CREDIT', 'CREDITS', 'CRD', 'C',
 }
 
+# Grade → grade points mapping for end-sem CSVs that provide only letter grades.
+_GRADE_POINT_MAP = {
+    'O': 10.0,
+    'A+': 9.0,
+    'A': 8.0,
+    'B+': 7.0,
+    'B': 6.0,
+    'C': 5.0,
+    'U': 0.0,
+    'AB': 0.0,
+}
+
+_GRADE_ALIASES = {
+    'ABS': 'AB',
+    'ABSENT': 'AB',
+    'A/B': 'AB',
+    'U-RA*': 'U',
+    'U-RA': 'U',
+    'RA': 'U',
+    'F': 'U',
+    'FAIL': 'U',
+}
+
+
+def _normalize_grade_token(token: str) -> Optional[str]:
+    """Normalize a grade token to canonical form, or return None."""
+    if token is None:
+        return None
+    t = re.sub(r"\s+", "", str(token).upper())
+    t = re.sub(r"[^A-Z+\-]", "", t)
+    if not t:
+        return None
+    if t in _GRADE_ALIASES:
+        return _GRADE_ALIASES[t]
+    if t in _GRADE_POINT_MAP:
+        return t
+    return None
+
 
 def _detect_mark_subcolumns(
     rows: list, hdr_idx: int, col_map: Dict[float, str]
@@ -817,6 +855,13 @@ def _is_student_id(text: str) -> bool:
         # We still return True but callers should use _known_codes to disambiguate
         return True
     return False
+
+
+def _normalize_student_key(text: str) -> str:
+    """Normalize roll/reg numbers for matching (strip spaces/punctuation)."""
+    if text is None:
+        return ""
+    return re.sub(r"[^A-Za-z0-9]", "", str(text)).upper()
 
 
 _SUBJ_NAME_SKIP = {
@@ -2021,10 +2066,17 @@ def _parse_csv_table(file_bytes: bytes) -> Dict:
             continue
         # Only student data rows
         _sid = None
-        for _c in _row:
-            if _is_student_id(_c.strip()):
-                _sid = _c.strip()
-                break
+        for _col in (roll_col, reg_col):
+            if _col is not None and _col < len(_row):
+                _val = _row[_col].strip()
+                if _val and re.search(r"\d", _val):
+                    _sid = _val
+                    break
+        if not _sid:
+            for _c in _row:
+                if _is_student_id(_c.strip()):
+                    _sid = _c.strip()
+                    break
         if not _sid:
             continue
         for ci in best_col_map:
@@ -2105,7 +2157,7 @@ def _parse_csv_table(file_bytes: bytes) -> Dict:
                 val = row[_col].strip()
                 if val.upper() in _known_csv_codes:
                     continue    # subject code cell — skip
-                if _is_student_id(val):
+                if val and re.search(r"\d", val):
                     student_id = val
                     break
 
@@ -2131,32 +2183,67 @@ def _parse_csv_table(file_bytes: bytes) -> Dict:
 
             marks:    Optional[float] = None
             is_absent = False
+            grade: Optional[str] = None
+            grade_points: Optional[float] = None
+            result_status: Optional[str] = None
+            max_marks = _max_marks_csv.get(col_i)
+
             if raw_val:
                 clean = raw_val.replace(",", ".").strip()
-                if clean.upper() in ("AB", "A/B", "ABS", "ABSENT"):
-                    is_absent = True
-                # Two-or-more decimal places → attendance %, not a mark
-                elif re.fullmatch(r"\d{1,3}\.\d{2,}", clean):
-                    marks = None
-                elif re.fullmatch(r"\d{1,3}(\.\d)?", clean):
-                    try:
-                        marks = float(clean)
-                        # If we have a reliable max_marks ceiling and the value
-                        # clearly exceeds it, it is attendance %, not a mark.
-                        _ceil = _max_marks_csv.get(col_i)
-                        if _ceil is not None and marks > _ceil:
-                            marks = None
-                    except ValueError:
-                        marks = None
+                clean_up = clean.upper()
 
-            all_records.append({
+                grade = _normalize_grade_token(clean_up)
+                if grade:
+                    if grade == "AB":
+                        is_absent = True
+                        result_status = "AB"
+                    elif grade == "U":
+                        result_status = "FAIL"
+                    else:
+                        result_status = "PASS"
+                    grade_points = _GRADE_POINT_MAP.get(grade)
+                else:
+                    if clean_up in ("AB", "A/B", "ABS", "ABSENT"):
+                        is_absent = True
+                    elif clean_up in ("NA", "N/A", "-", "--", "—"):
+                        marks = None
+                    else:
+                        num_m = re.search(r"(\d{1,3}(?:\.\d+)?)", clean)
+                        if num_m:
+                            num_str = num_m.group(1)
+                            if (re.fullmatch(r"\d{1,3}\.\d{2,}", num_str)
+                                    and "/" not in clean and "%" not in clean):
+                                marks = None
+                            else:
+                                try:
+                                    marks = float(num_str)
+                                    # If we have a reliable max_marks ceiling and the value
+                                    # clearly exceeds it, it is attendance %, not a mark.
+                                    _ceil = _max_marks_csv.get(col_i)
+                                    if _ceil is not None and marks > _ceil:
+                                        marks = None
+                                except ValueError:
+                                    marks = None
+
+            record = {
                 "roll_number":     student_id,
                 "subject_code":    subj_code,
                 "internal_number": internal_number,
                 "marks":           marks,
                 "is_absent":       is_absent,
                 "type":            mark_type,
-            })
+            }
+
+            if grade is not None:
+                record["grade"] = grade
+            if grade_points is not None:
+                record["grade_points"] = grade_points
+            if result_status is not None:
+                record["result_status"] = result_status
+            if max_marks is not None:
+                record["max_marks"] = max_marks
+
+            all_records.append(record)
 
     subjects = [
         {"code": code, "name": subject_names.get(code, code), "credits": 3}
@@ -2440,6 +2527,14 @@ Context: {department} | Batch {batch_year} | {semester_name}
 Total internal records: {record_count}
 Total end semester records: {end_sem_count}
 
+Important routing rule:
+- `data` contains CIA/internal marks only.
+- `end_sem_data` contains end semester / university exam results only.
+- If the user's query mentions end semester, semester-end, final exam, university exam,
+  pass percentage, grade distribution, result status, or "each subject" in the end-semester context,
+  use `end_sem_data` and do NOT answer from CIA/internal marks.
+- For end-semester chart requests, prefer pass/fail or pass-percentage logic from `end_sem_data`.
+
 Query: "{query}"
 
 Write Python code that processes `data` and/or `end_sem_data` and sets `result` to EXACTLY one of:
@@ -2493,14 +2588,22 @@ class AnalyticsAI:
     Requires Django to be set up before import (import inside view functions is fine).
     """
 
-    def __init__(self, department_id, batch_year: str, semester_number: int):
+    def __init__(self, department_id, batch_year: str, semester_number: int, section: Optional[str] = None):
         self.department_id = department_id
         self.batch_year = batch_year
         self.semester_number = semester_number
+        self.section = section.strip().upper() if section else None
+        self._active_section = self.section
 
     # ── PDF Parsing ───────────────────────────────────────────────────────────
 
-    def process_pdf(self, file_bytes: bytes, filename: str, internal_override: int = None) -> Dict:
+    def process_pdf(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        internal_override: int = None,
+        mark_type_override: str = None,
+    ) -> Dict:
         """
         Main entry point for PDF uploads.
 
@@ -2520,7 +2623,7 @@ class AnalyticsAI:
                P2: Coordinate parser names (inline header rows)
                P3: LLM names (only fills gaps; guardrailed)
 
-          4. Apply any user-supplied internal_override on top.
+          4. Apply optional mark_type_override, then internal_override.
         """
         import fitz
 
@@ -2600,6 +2703,12 @@ class AnalyticsAI:
             enriched_subjects.append(subj)
         parsed["subjects"] = enriched_subjects
 
+        # 3c. Optional UI override for mark type (authoritative)
+        if mark_type_override:
+            override = str(mark_type_override).strip().lower()
+            if override in ("internal", "end_semester"):
+                parsed["mark_type"] = override
+
         # Stamp every record with the determined mark metadata
         int_num   = parsed["internal_number"]
         mark_type = parsed["mark_type"]
@@ -2626,7 +2735,13 @@ class AnalyticsAI:
 
     # ── CSV import ────────────────────────────────────────────────────────────
 
-    def process_csv(self, file_bytes: bytes, filename: str, internal_override: int = None) -> Dict:
+    def process_csv(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        internal_override: int = None,
+        mark_type_override: str = None,
+    ) -> Dict:
         """
         Main entry point for CSV mark-sheet uploads.
 
@@ -2679,7 +2794,16 @@ class AnalyticsAI:
                 rec["type"]            = mark_type
                 rec["internal_number"] = int_num
 
-        # ── Step 4: user override wins ────────────────────────────────────────
+        # ── Step 4: optional mark-type override (wins), then internal override ─
+        if mark_type_override:
+            override = str(mark_type_override).strip().lower()
+            if override in ("internal", "end_semester"):
+                parsed["mark_type"] = override
+                int_num = parsed.get("internal_number", 1) or 1
+                for rec in parsed.get("records", []):
+                    rec["type"] = override
+                    rec["internal_number"] = int_num
+
         if internal_override is not None and int(internal_override) in (1, 2, 3):
             override_int = int(internal_override)
             parsed["internal_number"] = override_int
@@ -2724,8 +2848,10 @@ class AnalyticsAI:
             reg = str(s.registration_number).strip().upper() if s.registration_number else None
             if rn:
                 student_pool[rn] = s
+                student_pool[_normalize_student_key(rn)] = s
             if reg and reg not in ('NONE', 'NULL', ''):
                 student_pool[reg] = s
+                student_pool[_normalize_student_key(reg)] = s
 
         # ── Look up subjects (READ-ONLY — subjects must be defined manually) ──
         # The AI engine NEVER creates or modifies subjects from uploaded documents.
@@ -2791,7 +2917,7 @@ class AnalyticsAI:
             # Tier 2: roll number stripped of all spaces (handles "24 AD 001" → "24AD001").
             # We do NOT do name-based fuzzy matching — mark sheets always carry
             # numeric identifiers and fuzzy name matching causes silent wrong assignments.
-            roll_norm = roll.replace(" ", "")
+            roll_norm = _normalize_student_key(roll_raw)
 
             # Sanity-check: reject pure serial numbers (1, 2, 3 … 99) that the
             # LLM mistakenly extracted from the S.No column.
@@ -3149,6 +3275,14 @@ JSON:"""
                                 setattr(result_obj, field, Decimal(str(new_value)))
                             except InvalidOperation:
                                 return {"error": f"'{new_value}' is not a valid number."}
+                        if field in ('internal1', 'internal2', 'internal3'):
+                            absent_field = f"{field}_absent"
+                            val_up = str(new_value).strip().upper() if new_value is not None else ''
+                            if val_up in ('AB', 'A/B', 'ABS', 'ABSENT'):
+                                setattr(result_obj, field, None)
+                                setattr(result_obj, absent_field, True)
+                            else:
+                                setattr(result_obj, absent_field, False)
                     elif field == 'grade':
                         setattr(result_obj, field,
                                 str(new_value).strip().upper() if new_value else None)
@@ -3222,6 +3356,12 @@ JSON:"""
         # ── Resolve references from conversation history ──────────────────────
         resolved = self._resolve_references(query)
 
+        # Apply section context from query or UI filter
+        self._active_section = (
+            self._resolve_section_from_query(resolved)
+            or self.section
+        )
+
         # ── Fast path: deterministic direct handlers ──────────────────────────
         direct = self._try_direct_query(resolved)
         if direct is not None:
@@ -3243,6 +3383,14 @@ JSON:"""
             return query
 
         ql = query.lower().strip()
+
+        # Preserve chart intent; don't rewrite visual requests
+        if re.search(
+            r"\bgraph\b|\bgraphical\b|\bchart\b|\bplot\b|\bvisual\b|\bvisuali[sz]e?\b"
+            r"|\bvisuali[sz]ation\b|\bpictorial\b",
+            ql,
+        ):
+            return query
 
         # Check if query contains vague references that need resolution
         _REFERENCE_PATTERNS = re.compile(
@@ -3320,6 +3468,16 @@ JSON:"""
     )
     _END_SEM_RE      = re.compile(r'end\s*sem|end\s*semester|endsem|university\s*exam|final\s*exam', re.IGNORECASE)
 
+    @classmethod
+    def _dq_prefers_end_semester(cls, query: str) -> bool:
+        """Return True when the query is explicitly about end-semester results."""
+        ql = query.lower()
+        return bool(
+            cls._END_SEM_RE.search(query)
+            or re.search(r'\bsemester\s*end\b|\bsemester-end\b|\bresult\s+status\b', ql)
+            or re.search(r'\bpass\s+percentage\b|\bpass\s+rate\b', ql)
+        )
+
     # ── Direct query engine ── shared helpers ─────────────────────────────────
 
     def _dq_load_context(self):
@@ -3363,11 +3521,20 @@ JSON:"""
 
     def _dq_parse_field(self, q: str) -> str:
         """Parse mark field from query text. Returns DB field name."""
+        ql = q.lower()
         int_m = self._INTERNAL_RE.search(q)
         if int_m:
             n = (int_m.group('ord') or int_m.group('n') or int_m.group('n2')
                  or int_m.group('n3') or int_m.group('n4') or int_m.group('n5'))
             return f"internal{n}"
+        word_m = re.search(
+            r"\b(first|second|third)\b\s*(?:cia|internal|ia|ct|test)\b"
+            r"|\b(?:cia|internal|ia|ct|test)\s*(first|second|third)\b",
+            ql,
+        )
+        if word_m:
+            word = (word_m.group(1) or word_m.group(2) or "").lower()
+            return {"first": "internal1", "second": "internal2", "third": "internal3"}.get(word, "internal1")
         if self._END_SEM_RE.search(q):
             return "end_sem_marks"
         return "internal1"
@@ -3375,6 +3542,16 @@ JSON:"""
     @staticmethod
     def _dq_field_label(field: str) -> str:
         return f"Internal {field[-1]}" if field.startswith("internal") else "End Sem Marks"
+
+    @staticmethod
+    def _resolve_section_from_query(query: str) -> Optional[str]:
+        ql = query.lower()
+        m = re.search(r"\bsection\s*([a-z])\b", ql)
+        if not m:
+            m = re.search(r"\b([a-z])\s*section\b", ql)
+        if not m:
+            m = re.search(r"\bsec\s*([a-z])\b", ql)
+        return m.group(1).upper() if m else None
 
     def _dq_base_qs(self, department, semester, subject=None):
         """Base SubjectResult queryset for this batch/dept/semester."""
@@ -3385,6 +3562,8 @@ JSON:"""
             student__is_active=True,
             subject__semester=semester,
         )
+        if self._active_section:
+            qs = qs.filter(student__section=self._active_section)
         if subject:
             qs = qs.filter(subject=subject)
         return qs
@@ -3430,6 +3609,21 @@ JSON:"""
         q  = query.strip()
         ql = q.lower()
 
+        # 0. Chart / graph / visualization requests
+        #    Must come BEFORE other handlers so visual requests always render charts
+        if re.search(
+            r'\bgraph\b|\bgraphical\b|\bchart\b|\bplot\b|\bvisual\b|\bvisuali[sz]e?\b|\bvisuali[sz]ation\b'
+            r'|\bpictorial\b|\bvisual\s+analytics\b'
+            r'|\bbar\s*(?:chart|graph)\b|\bpie\s*(?:chart|graph)\b'
+            r'|\bline\s*(?:chart|graph)\b|\bdoughnut\b',
+            ql
+        ):
+            if self._dq_prefers_end_semester(q):
+                return None
+            result = self._dq_chart(q)
+            if result is not None:
+                return result  # chart resolved; else fall through
+
         # 1. Failed / arrears
         if re.search(r'\bfailed\b|\barrears?\b|\bu\s*grade\b|\bflunked\b', ql):
             return self._dq_failed(q)
@@ -3461,18 +3655,6 @@ JSON:"""
         ):
             return self._dq_pass_fail_stats(q)
 
-        # 6. Chart / graph / visualization requests
-        #    Must come BEFORE generic "show/list" handler so "show graph" → chart
-        if re.search(
-            r'\bgraph\b|\bchart\b|\bplot\b|\bvisuali[sz]e?\b|\bvisuali[sz]ation\b'
-            r'|\bbar\s*(?:chart|graph)\b|\bpie\s*(?:chart|graph)\b'
-            r'|\bline\s*(?:chart|graph)\b|\bdoughnut\b',
-            ql
-        ):
-            result = self._dq_chart(q)
-            if result is not None:
-                return result  # chart resolved; else fall through
-
         # 7. All marks for a subject (must come before student-marks check)
         #    "show marks for 21MA130" / "list all marks for maths"
         if re.search(r'\blist\b|\bshow\b|\bdisplay\b|\ball\s+marks\b|\bfull\s+marks\b'
@@ -3487,6 +3669,9 @@ JSON:"""
             r'\bmarks?\s+(?:of|for)\b|\bscores?\s+(?:of|for)\b'
             r'|\bshow\s+marks\b|\bmark\s*sheet\b|\bresult\s+of\b',
             ql
+        ) or (
+            re.search(r'\broll\s*number\b|\breg(?:istration)?\s*number\b|\bstudent\b', ql)
+            and re.search(r'\b7\d{11,12}\b|\b\d{2,4}[a-z]{2,5}\d{3,4}\b', ql)
         ):
             return self._dq_student_marks(q)
 
@@ -3937,8 +4122,10 @@ JSON:"""
     # ── Handler 5: pass / fail stats ───────────────────────────────────────────
 
     def _dq_pass_fail_stats(self, query: str) -> Optional[Dict]:
-        from students.models import Subject as SubjectModel
+        from django.db.models import Q
+        from students.models import Subject as SubjectModel, Student
         q = query
+        ql = q.lower()
         try:
             department, semester = self._dq_load_context()
         except Exception:
@@ -3948,6 +4135,117 @@ JSON:"""
         if err:
             return {"format": "paragraph", "text": err}
 
+        field = self._dq_parse_field(q)
+        wants_breakdown = bool(re.search(r"per\s+subject|subject[-\s]*wise|each\s+subject", ql))
+
+        # ── Internal pass/fail (based on marks, not grades) ─────────────────
+        if field.startswith("internal"):
+            absent_field = f"{field}_absent"
+            pass_threshold = 50.0
+            field_label = self._dq_field_label(field)
+
+            if subject:
+                qs = (self._dq_base_qs(department, semester, subject)
+                    .filter(Q(**{f"{field}__isnull": False}) | Q(**{f"{absent_field}": True})))
+                total = qs.count()
+                if not total:
+                    return {"format": "paragraph",
+                            "text": f"No {field_label} marks uploaded for {subject.name} yet."}
+                passed = (qs.exclude(**{f"{absent_field}": True})
+                      .filter(**{f"{field}__gte": pass_threshold})
+                      .count())
+                failed = total - passed
+                return {
+                    "format":  "table",
+                    "title":   f"Pass / Fail Summary — {subject.name}",
+                    "columns": ["Metric", "Count", "Percentage"],
+                    "rows": [
+                        ["Total",  str(total),  "100%"],
+                        ["Passed", str(passed), f"{passed/total*100:.1f}%"],
+                        ["Failed", str(failed), f"{failed/total*100:.1f}%"],
+                    ],
+                }
+
+            if not wants_breakdown:
+                from collections import defaultdict
+                students_qs = Student.objects.filter(
+                    department_id=department.id,
+                    academic_year_joining=self.batch_year,
+                    is_active=True,
+                )
+                if self._active_section:
+                    students_qs = students_qs.filter(section=self._active_section)
+
+                sr_qs = (self._dq_base_qs(department, semester, None)
+                         .only("student_id", field, absent_field))
+
+                student_appeared = defaultdict(int)
+                student_passed = defaultdict(int)
+                for sr in sr_qs:
+                    mark = getattr(sr, field)
+                    is_absent = getattr(sr, absent_field, False)
+                    if mark is not None or is_absent:
+                        student_appeared[sr.student_id] += 1
+                        if mark is not None and not is_absent and float(mark) >= pass_threshold:
+                            student_passed[sr.student_id] += 1
+
+                appeared_count = len(student_appeared)
+                if appeared_count == 0:
+                    return {"format": "paragraph",
+                            "text": "No internal marks uploaded for this semester yet."}
+
+                passed_count = sum(
+                    1 for sid in student_appeared
+                    if student_passed[sid] == student_appeared[sid]
+                )
+                failed_count = appeared_count - passed_count
+                pass_pct = round(passed_count / appeared_count * 100, 1)
+
+                title = f"Overall Pass % — {field_label}"
+                if self._active_section:
+                    title += f" — Section {self._active_section}"
+
+                return {
+                    "format":  "table",
+                    "title":   title,
+                    "columns": ["Metric", "Count"],
+                    "rows": [
+                        ["Class Strength", str(students_qs.count())],
+                        ["Appeared", str(appeared_count)],
+                        ["Passed", str(passed_count)],
+                        ["Failed", str(failed_count)],
+                        ["Pass %", f"{pass_pct:.1f}%"],
+                    ],
+                }
+
+            # Subject-wise breakdown (all subjects)
+            subjects = SubjectModel.objects.filter(department=department, semester=semester)
+            rows = []
+            for sub in subjects:
+                qs = (self._dq_base_qs(department, semester, sub)
+                      .filter(Q(**{f"{field}__isnull": False}) | Q(**{f"{absent_field}": True})))
+                total = qs.count()
+                if total:
+                    passed = (qs.exclude(**{f"{absent_field}": True})
+                              .filter(**{f"{field}__gte": pass_threshold})
+                              .count())
+                    failed = total - passed
+                    rows.append([
+                        sub.code, sub.name, str(total),
+                        str(passed), str(failed),
+                        f"{passed/total*100:.1f}%",
+                    ])
+            if not rows:
+                return {"format": "paragraph",
+                        "text": "No internal marks uploaded for this semester yet."}
+            return {
+                "format":  "table",
+                "title":   "Pass / Fail Summary — All Subjects",
+                "columns": ["Code", "Subject", "Total", "Passed", "Failed", "Pass %"],
+                "rows":    rows,
+            }
+
+        # ── End-semester / grade-based fallback ─────────────────────────────
         def _stats(sub):
             qs = self._dq_base_qs(department, semester, sub).filter(grade__isnull=False)
             total = qs.count()
@@ -4492,7 +4790,20 @@ JSON:"""
             if err:
                 return {"format": "paragraph", "text": err}
 
-            base_qs = self._dq_base_qs(department, semester, subject)
+            if self._dq_prefers_end_semester(query):
+                base_qs = (EndSemesterResult.objects
+                           .filter(
+                               student__academic_year_joining=self.batch_year,
+                               student__department_id=department.id,
+                               student__is_active=True,
+                               subject__semester=semester,
+                           ))
+                if self._active_section:
+                    base_qs = base_qs.filter(student__section=self._active_section)
+                if subject:
+                    base_qs = base_qs.filter(subject=subject)
+            else:
+                base_qs = self._dq_base_qs(department, semester, subject)
             dist = (base_qs
                     .exclude(grade__isnull=True)
                     .exclude(grade='')
@@ -4514,11 +4825,26 @@ JSON:"""
             }
 
         # ── Pass/fail chart ───────────────────────────────────────────────────
-        if re.search(r'\bpass\b.*\bfail\b|\bfail\b.*\bpass\b|\bresult\s+status\b', ql):
+        if re.search(r'\bpass\b.*\bfail\b|\bfail\b.*\bpass\b|\bresult\s+status\b|\bpass\s+percentage\b|\bpass\s+rate\b', ql):
             subject, _ = self._dq_resolve_subject(query, department, semester)
-            base_qs = self._dq_base_qs(department, semester, subject)
-            total   = base_qs.exclude(grade__isnull=True).exclude(grade='').count()
-            failed  = base_qs.filter(grade__in=['U', 'u']).count()
+            if self._dq_prefers_end_semester(query):
+                base_qs = (EndSemesterResult.objects
+                           .filter(
+                               student__academic_year_joining=self.batch_year,
+                               student__department_id=department.id,
+                               student__is_active=True,
+                               subject__semester=semester,
+                           ))
+                if self._active_section:
+                    base_qs = base_qs.filter(student__section=self._active_section)
+                if subject:
+                    base_qs = base_qs.filter(subject=subject)
+                total  = base_qs.exclude(grade__isnull=True).exclude(grade='').count()
+                failed = base_qs.filter(grade__in=['U', 'u']).count()
+            else:
+                base_qs = self._dq_base_qs(department, semester, subject)
+                total   = base_qs.exclude(grade__isnull=True).exclude(grade='').count()
+                failed  = base_qs.filter(grade__in=['U', 'u']).count()
             passed  = total - failed
             subj_name = subject.name if subject else "All Subjects"
             return {
@@ -4536,15 +4862,26 @@ JSON:"""
             labels = []
             data   = []
             for sub in subjects:
-                avg = (SubjectResult.objects
-                       .filter(
-                           student__academic_year_joining=self.batch_year,
-                           student__department_id=department.id,
-                           student__is_active=True,
-                           subject=sub,
-                       )
-                       .exclude(**{f"{field}__isnull": True})
-                       .aggregate(avg=Avg(field))['avg'])
+                if self._dq_prefers_end_semester(query):
+                    avg = (EndSemesterResult.objects
+                           .filter(
+                               student__academic_year_joining=self.batch_year,
+                               student__department_id=department.id,
+                               student__is_active=True,
+                               subject=sub,
+                           )
+                           .exclude(marks__isnull=True)
+                           .aggregate(avg=Avg('marks'))['avg'])
+                else:
+                    avg = (SubjectResult.objects
+                           .filter(
+                               student__academic_year_joining=self.batch_year,
+                               student__department_id=department.id,
+                               student__is_active=True,
+                               subject=sub,
+                           )
+                           .exclude(**{f"{field}__isnull": True})
+                           .aggregate(avg=Avg(field))['avg'])
                 if avg is not None:
                     labels.append(sub.code)
                     data.append(round(float(avg), 2))
@@ -4559,7 +4896,7 @@ JSON:"""
             }
 
         # ── CIA comparison chart (CIA 1 vs 2 vs 3) ────────────────────────────
-        if re.search(r'\bcia\b|\binternal\b|\bvs\b|\bcompare\b', ql):
+        if re.search(r'\bcia\b|\binternals?\b|\bvs\b|\bcompare\b', ql):
             from django.db.models import Avg
             subjects = Subject.objects.filter(department=department, semester=semester)
             labels   = [s.code for s in subjects]
@@ -4599,6 +4936,58 @@ JSON:"""
 
         labels   = [s.code for s in subjects]
         datasets = []
+        end_sem_context = self._dq_prefers_end_semester(query)
+
+        if end_sem_context and re.search(r'\bpass\s+percentage\b|\bpass\s+rate\b|\bpass\b', ql):
+            pass_pct_vals = []
+            pass_labels = []
+            for sub in subjects:
+                base_qs = (EndSemesterResult.objects
+                           .filter(
+                               student__academic_year_joining=self.batch_year,
+                               student__department_id=department.id,
+                               student__is_active=True,
+                               subject=sub,
+                           ))
+                if self._active_section:
+                    base_qs = base_qs.filter(student__section=self._active_section)
+                total = base_qs.exclude(grade__isnull=True).exclude(grade='').count()
+                if total == 0:
+                    continue
+                failed = base_qs.filter(grade__in=['U', 'u']).count()
+                passed = total - failed
+                pass_labels.append(sub.code)
+                pass_pct_vals.append(round((passed / total) * 100, 2))
+            if pass_pct_vals:
+                return {
+                    "format":     "chart",
+                    "chart_type": chart_type if chart_type != "bar" else "bar",
+                    "title":      "End Semester Pass Percentage by Subject",
+                    "labels":     pass_labels,
+                    "datasets":   [{"label": "Pass %", "data": pass_pct_vals}],
+                }
+
+        if end_sem_context:
+            end_vals = []
+            for sub in subjects:
+                avg = (EndSemesterResult.objects
+                       .filter(
+                           student__academic_year_joining=self.batch_year,
+                           student__department_id=department.id,
+                           student__is_active=True,
+                           subject=sub,
+                       )
+                       .exclude(marks__isnull=True)
+                       .aggregate(avg=Avg('marks'))['avg'])
+                end_vals.append(round(float(avg), 2) if avg is not None else 0)
+            if any(v > 0 for v in end_vals):
+                return {
+                    "format":     "chart",
+                    "chart_type": chart_type,
+                    "title":      "End Semester Performance Overview",
+                    "labels":     labels,
+                    "datasets":   [{"label": "End Sem Avg", "data": end_vals}],
+                }
 
         # CIA 1, CIA 2, CIA 3 averages
         for f_name, f_label in [("internal1", "CIA 1"),
@@ -4689,6 +5078,8 @@ JSON:"""
                   subject__semester=semester,
               )
               .select_related("student", "subject"))
+        if self._active_section:
+            qs = qs.filter(student__section=self._active_section)
 
         records = [
             {
@@ -4714,6 +5105,8 @@ JSON:"""
                       subject__semester=semester,
                   )
                   .select_related("student", "subject"))
+        if self._active_section:
+            end_qs = end_qs.filter(student__section=self._active_section)
 
         end_sem_records = [
             {
@@ -4748,6 +5141,12 @@ JSON:"""
             end_sem_count=len(end_sem_records),
             query=query,
         )
+
+        if self._dq_prefers_end_semester(query):
+            prompt += (
+                "\n\nThe current question is specifically about end-semester results. "
+                "Use end_sem_data as the primary source and ignore CIA/internal marks unless the user explicitly asks for them."
+            )
 
         # Append conversation history to prompt if available
         if getattr(self, '_history', None):

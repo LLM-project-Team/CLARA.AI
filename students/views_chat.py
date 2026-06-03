@@ -76,11 +76,26 @@ def _handle_chat(request):
     semester_raw   = request.POST.get("semester_number") or _body_field(request, "semester_number")
     message        = request.POST.get("message")        or _body_field(request, "message", "")
     uploaded_file  = request.FILES.get("file")
+    section        = request.POST.get("section")        or _body_field(request, "section")
     internal_override_raw = request.POST.get("internal_override") or _body_field(request, "internal_override")
+    mark_type_override_raw = request.POST.get("mark_type_override") or _body_field(request, "mark_type_override")
     try:
         internal_override = int(internal_override_raw) if internal_override_raw and internal_override_raw != 'auto' else None
     except (ValueError, TypeError):
         internal_override = None
+
+    mark_type_override = None
+    if mark_type_override_raw:
+        candidate = str(mark_type_override_raw).strip().lower()
+        if candidate in ("internal", "end_semester"):
+            mark_type_override = candidate
+
+    # Heuristic fallback: if the user message or filename hints end-sem,
+    # force end-semester so records don't land in internals.
+    if mark_type_override is None and uploaded_file:
+        hint_text = f"{message or ''} {uploaded_file.name or ''}".lower()
+        if re.search(r"(end\s*sem|end[_\-\s]*semester|endsem|semester\s*exam|university\s*exam|final\s*exam)", hint_text):
+            mark_type_override = "end_semester"
 
     if not department_id or not batch_year or not semester_raw:
         return JsonResponse({"error": "department_id, batch_year, and semester_number are required."}, status=400)
@@ -94,10 +109,13 @@ def _handle_chat(request):
     except (ValueError, TypeError):
         return JsonResponse({"error": "semester_number must be an integer."}, status=400)
 
+    section = section.strip().upper() if section else None
+
     ai = AnalyticsAI(
         department_id=department_id,
         batch_year=batch_year,
         semester_number=semester_number,
+        section=section,
     )
 
     # ── Branch: file import (PDF or CSV) ─────────────────────────────────────
@@ -115,9 +133,19 @@ def _handle_chat(request):
         file_bytes = uploaded_file.read()
 
         if is_csv:
-            result = ai.process_csv(file_bytes, uploaded_file.name, internal_override=internal_override)
+            result = ai.process_csv(
+                file_bytes,
+                uploaded_file.name,
+                internal_override=internal_override,
+                mark_type_override=mark_type_override,
+            )
         else:
-            result = ai.process_pdf(file_bytes, uploaded_file.name, internal_override=internal_override)
+            result = ai.process_pdf(
+                file_bytes,
+                uploaded_file.name,
+                internal_override=internal_override,
+                mark_type_override=mark_type_override,
+            )
 
         if "error" in result:
             return JsonResponse({"type": "pdf_import", "success": False, "error": result["error"]})

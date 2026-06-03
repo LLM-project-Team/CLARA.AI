@@ -113,7 +113,7 @@
     {% endif %}
 
     <!-- ── Subject Filter: pick a subject to view marks ── -->
-    {% if active_tab != 'subjects' %}
+    {% if active_tab == 'internals' %}
     <div class="filter-bar filter-bar-subject">
         <div class="filter-row">
             <div class="filter-item filter-item-grow">
@@ -245,146 +245,148 @@
 
 <!-- ====== MARKS TABS CONTENT ====== -->
 {% else %}
-{% if results_data %}
-<div class="panel table-panel">
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Roll No</th>
-                    <th>Student Name</th>
-                    {% if active_tab == 'internals' %}
-                    <th>Internal {{ selected_internal }} Marks</th>
-                    {% else %}
-                    <th>Marks</th>
-                    <th>Max Marks</th>
-                    <th>Grade</th>
-                    <th>Grade Points</th>
-                    <th>Status</th>
-                    <th>SGPA</th>
-                    <th>Arrears</th>
-                    {% endif %}
-                    <th class="act-col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for result in results_data %}
-                <tr id="marks-row-{{ result.result_id }}" class="{% if result.is_fail %}fail-row{% endif %}">
-                    <td>{{ result.student.roll_number }}</td>
-                    <td>{{ result.student.student_name }}</td>
-                    {% if active_tab == 'internals' %}
-                    <td>
-                        {% if result.is_absent %}<span class="absent-badge">AB</span>{% elif result.is_fail %}<span class="fail-mark">{{ result.mark|default:"—" }}</span>{% else %}{{ result.mark|default:"—" }}{% endif %}
-                    </td>
-                    {% else %}
-                    <td>{{ result.marks|default:"—" }}</td>
-                    <td>{{ result.max_marks|default:"—" }}</td>
-                    <td><span class="grade-badge {% if result.grade == 'U' %}fail{% endif %}">{{ result.grade|default:"—" }}</span></td>
-                    <td>{{ result.grade_points|default:"—" }}</td>
-                    <td>
-                        <span class="status-badge {% if result.result_status == 'FAIL' %}fail{% elif result.result_status == 'PASS' %}pass{% endif %}">
-                            {{ result.result_status|default:"—" }}
-                        </span>
-                    </td>
-                    <td>{{ result.summary.sgpa|default:"—"|floatformat:2 }}</td>
-                    <td>
-                        {% if result.summary %}
-                        <span class="arrear-count {% if result.summary.arrear_count > 0 %}has-arrears{% endif %}">
-                            {{ result.summary.arrear_count }}
-                        </span>
-                        {% else %}—{% endif %}
-                    </td>
-                    {% endif %}
-                    <td class="act-col">
-                        <div class="action-btns">
-                            <button class="icon-btn edit-btn" title="Edit marks"
-                                    onclick="toggleEditRow('{{ result.result_id }}')">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button class="icon-btn delete-btn" title="Delete record"
-                                    onclick="inlineDeleteRow('{{ result.result_id }}')">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <tr id="edit-row-{{ result.result_id }}" class="edit-expand-row" style="display:none;">
-                    <td colspan="{% if active_tab == 'internals' %}4{% else %}10{% endif %}" class="edit-expand-cell">
-                        <div class="edit-fields">
-                            {% if active_tab == 'internals' %}
-                            <div class="edit-field-group">
-                                <label>I1</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-internal1"
-                                       value="{{ result.internal1|default:'' }}" placeholder="—">
-                                <label>I2</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-internal2"
-                                       value="{{ result.internal2|default:'' }}" placeholder="—">
-                                <label>I3</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-internal3"
-                                       value="{{ result.internal3|default:'' }}" placeholder="—">
-                                <label>End Sem</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-end_sem_marks"
-                                       value="{{ result.end_sem_marks|default:'' }}" placeholder="—">
-                                <label>Grade</label>
-                                <input class="cell-input grade-input" id="ef-{{ result.result_id }}-grade"
-                                       value="{{ result.grade|default:'' }}" placeholder="—">
-                                <label>GP</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-grade_points"
-                                       value="{{ result.grade_points|default:'' }}" placeholder="—">
-                            </div>
-                            {% else %}
-                            <div class="edit-field-group">
-                                <label>Marks</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-marks"
-                                       value="{{ result.marks|default:'' }}" placeholder="—">
-                                <label>Max Marks</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-max_marks"
-                                       value="{{ result.max_marks|default:'' }}" placeholder="—">
-                                <label>Grade</label>
-                                <input class="cell-input grade-input" id="ef-{{ result.result_id }}-grade"
-                                       value="{{ result.grade|default:'' }}" placeholder="—">
-                                <label>GP</label>
-                                <input class="cell-input" id="ef-{{ result.result_id }}-grade_points"
-                                       value="{{ result.grade_points|default:'' }}" placeholder="—">
-                                <label>Status</label>
-                                <select class="cell-input" id="ef-{{ result.result_id }}-result_status">
-                                    <option value="">—</option>
-                                    <option value="PASS" {% if result.result_status == 'PASS' %}selected{% endif %}>PASS</option>
-                                    <option value="FAIL" {% if result.result_status == 'FAIL' %}selected{% endif %}>FAIL</option>
-                                    <option value="AB" {% if result.result_status == 'AB' %}selected{% endif %}>AB</option>
-                                    <option value="WH" {% if result.result_status == 'WH' %}selected{% endif %}>WH</option>
-                                </select>
-                            </div>
-                            {% endif %}
-                            <div class="edit-actions">
-                                <button class="btn btn-primary btn-sm"
-                                        onclick="saveEditRow('{{ result.result_id }}')">
-                                    <i class="fa-solid fa-floppy-disk"></i> Save
-                                </button>
-                                <button class="btn btn-secondary btn-sm"
+
+{% if active_tab == 'internals' %}
+    {% if results_data %}
+    <div class="panel table-panel">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Student Name</th>
+                        <th>Internal {{ selected_internal }} Marks</th>
+                        <th class="act-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results_data %}
+                    <tr id="marks-row-{{ result.result_id }}" class="{% if result.is_fail %}fail-row{% endif %}">
+                        <td>{{ result.student.roll_number }}</td>
+                        <td>{{ result.student.student_name }}</td>
+                        <td>
+                            {% if result.is_absent %}<span class="absent-badge">AB</span>{% elif result.is_fail %}<span class="fail-mark">{{ result.mark|default:"—" }}</span>{% else %}{{ result.mark|default:"—" }}{% endif %}
+                        </td>
+                        <td class="act-col">
+                            <div class="action-btns">
+                                <button class="icon-btn edit-btn" title="Edit marks"
                                         onclick="toggleEditRow('{{ result.result_id }}')">
-                                    Cancel
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="icon-btn delete-btn" title="Delete record"
+                                        onclick="inlineDeleteRow('{{ result.result_id }}')">
+                                    <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    <tr id="edit-row-{{ result.result_id }}" class="edit-expand-row" style="display:none;">
+                        <td colspan="4" class="edit-expand-cell">
+                            <div class="edit-fields">
+                                <div class="edit-field-group">
+                                    <label>I1</label>
+                                    <input class="cell-input" id="ef-{{ result.result_id }}-internal1"
+                                           value="{{ result.internal1|default:'' }}" placeholder="—">
+                                    <label>I2</label>
+                                    <input class="cell-input" id="ef-{{ result.result_id }}-internal2"
+                                           value="{{ result.internal2|default:'' }}" placeholder="—">
+                                    <label>I3</label>
+                                    <input class="cell-input" id="ef-{{ result.result_id }}-internal3"
+                                           value="{{ result.internal3|default:'' }}" placeholder="—">
+                                    <label>End Sem</label>
+                                    <input class="cell-input" id="ef-{{ result.result_id }}-end_sem_marks"
+                                           value="{{ result.end_sem_marks|default:'' }}" placeholder="—">
+                                    <label>Grade</label>
+                                    <input class="cell-input grade-input" id="ef-{{ result.result_id }}-grade"
+                                           value="{{ result.grade|default:'' }}" placeholder="—">
+                                    <label>GP</label>
+                                    <input class="cell-input" id="ef-{{ result.result_id }}-grade_points"
+                                           value="{{ result.grade_points|default:'' }}" placeholder="—">
+                                </div>
+                                <div class="edit-actions">
+                                    <button class="btn btn-primary btn-sm"
+                                            onclick="saveEditRow('{{ result.result_id }}')">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm"
+                                            onclick="toggleEditRow('{{ result.result_id }}')">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
-{% elif selected_subject_code %}
-<div class="panel"><div class="no-data">
-    <i class="fa-solid fa-circle-info"></i>
-    <p>No data available for the selected subject.</p>
-</div></div>
-{% else %}
-<div class="panel"><div class="no-data">
-    <i class="fa-solid fa-filter"></i>
-    <p>Select a subject above to view the marks.</p>
-</div></div>
+    {% elif selected_subject_code %}
+    <div class="panel"><div class="no-data">
+        <i class="fa-solid fa-circle-info"></i>
+        <p>No data available for the selected subject.</p>
+    </div></div>
+    {% else %}
+    <div class="panel"><div class="no-data">
+        <i class="fa-solid fa-filter"></i>
+        <p>Select a subject above to view the marks.</p>
+    </div></div>
+    {% endif %}
+
+{% elif active_tab == 'end_semester' %}
+    {% if results_data %}
+    <div class="panel table-panel">
+        <div class="table-container end-sem-table">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Reg No</th>
+                        <th>Student Name</th>
+                        {% for subject in subjects %}
+                        <th title="{{ subject.name|escape }}">{{ subject.code }}</th>
+                        {% endfor %}
+                        <th>Credits Earned</th>
+                        <th>Total Points</th>
+                        <th>SGPA</th>
+                        <th>Subject Absent</th>
+                        <th>Arrears</th>
+                        <th>Total Arrear</th>
+                        <th>Rank</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results_data %}
+                    <tr>
+                        <td>{{ result.student.roll_number }}</td>
+                        <td>{{ result.reg_number|default:"—" }}</td>
+                        <td>{{ result.student.student_name }}</td>
+                        {% for g in result.grades %}
+                        <td>
+                            <span class="grade-badge {% if g == 'U' or g == 'AB' %}fail{% endif %}">{{ g|default:"—" }}</span>
+                        </td>
+                        {% endfor %}
+                        <td>{{ result.credits_earned|default:"—" }}</td>
+                        <td>{% if result.total_points is not None %}{{ result.total_points|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{% if result.sgpa is not None %}{{ result.sgpa|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{{ result.absent_count|default:"—" }}</td>
+                        <td>{{ result.arrear_count|default:"—" }}</td>
+                        <td>{{ result.total_arrear|default:"—" }}</td>
+                        <td>{{ result.rank|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="panel"><div class="no-data">
+        <i class="fa-solid fa-circle-info"></i>
+        <p>No end semester data available.</p>
+    </div></div>
+    {% endif %}
 {% endif %}
+
 {% endif %}
 
 <!-- Back nav moved into context strip above -->
@@ -1057,6 +1059,24 @@ document.addEventListener('click', e => {
 
 /* ── Table ───────────────────────────────────────────────────────────────── */
 .table-container { overflow-x: auto; }
+.table-container.end-sem-table {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+.end-sem-table .data-table {
+    table-layout: auto;
+    width: max-content;
+    min-width: 100%;
+}
+.end-sem-table .data-table th,
+.end-sem-table .data-table td {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
+}
+.end-sem-table .data-table th {
+    font-size: 0.65rem;
+}
 
 .data-table {
     width: 100%;
@@ -2123,6 +2143,7 @@ async function sendChat() {
     fd.append('department_id',   DEPT_ID);
     fd.append('batch_year',      BATCH_YEAR);
     fd.append('semester_number', SEM_NUM);
+    if (SECTION_FILTER_VAL) fd.append('section', SECTION_FILTER_VAL);
     if (text) {
         fd.append('message', text);
         pushHistory('user', text);
@@ -2131,6 +2152,7 @@ async function sendChat() {
         fd.append('file', file);
         const ov = document.getElementById('internalOverrideSelect')?.value || 'auto';
         if (ov !== 'auto') fd.append('internal_override', ov);
+        if (ACTIVE_TAB === 'end_semester') fd.append('mark_type_override', 'end_semester');
     }
     // Send conversation history for context-aware responses
     if (chatHistory.length > 1) {

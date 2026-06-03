@@ -988,10 +988,10 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
         for sr in all_sr:
             mark  = getattr(sr, internal_field_name)
             is_ab = getattr(sr, absent_field_name, False)
-            if mark is not None and not is_ab:
+            if mark is not None or is_ab:
                 student_appeared[sr.student_id] += 1
-                # Pass: mark >= 50 (out of 100)
-                if float(mark) >= PASS_THRESHOLD:
+                # Pass: mark >= 50 (out of 100); absentees count as fail
+                if mark is not None and not is_ab and float(mark) >= PASS_THRESHOLD:
                     student_passed[sr.student_id] += 1
 
         total_strength = students.count()
@@ -1034,9 +1034,9 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
                 is_absent = getattr(result, absent_field, False)
 
                 # Count analytics — marks out of 100, >= 50 is pass
-                if mark is not None and not is_absent:
+                if mark is not None or is_absent:
                     subj_appeared += 1
-                    if float(mark) >= PASS_THRESHOLD:
+                    if mark is not None and not is_absent and float(mark) >= PASS_THRESHOLD:
                         subj_passed += 1
 
                 # Determine pass/fail for this row
@@ -1075,63 +1075,89 @@ def analytics_semester_details(request, department_id, batch_year, semester_numb
         except Subject.DoesNotExist:
             pass
     
-    elif active_tab == 'end_semester' and selected_subject_code:
-        try:
-            subject = Subject.objects.get(code=selected_subject_code, semester=semester, department=department)
-            # Load from the dedicated EndSemesterResult table
+    elif active_tab == 'end_semester':
+        # Show all subjects in a single grid (no subject filter)
+        subjects_list = list(subjects)
+        if subjects_list:
             end_sem_results = EndSemesterResult.objects.filter(
                 student__in=students,
-                subject=subject
-            ).select_related('student')
+                subject__in=subjects_list
+            ).select_related('student', 'subject')
 
-            # ── Per-subject end-semester analytics ─────────────────────────
-            subj_appeared = 0
-            subj_passed   = 0
-
-            for result in end_sem_results:
-                # Appeared = not absent
-                if result.result_status not in ('AB',):
-                    subj_appeared += 1
-                    # Pass: marks >= 50 (out of 100); fallback to result_status
-                    if result.marks is not None:
-                        if float(result.marks) >= PASS_THRESHOLD:
-                            subj_passed += 1
-                    elif result.result_status == 'PASS':
-                        subj_passed += 1
-
-                # Determine pass/fail for this row
-                is_fail = False
-                if result.result_status == 'AB':
-                    is_fail = True
-                elif result.marks is not None and float(result.marks) < PASS_THRESHOLD:
-                    is_fail = True
-                elif result.result_status == 'FAIL':
-                    is_fail = True
-
-                results_data.append({
-                    'result_id': str(result.id),
-                    'student': result.student,
-                    'marks': result.marks,
-                    'max_marks': result.max_marks,
-                    'grade': result.grade,
-                    'grade_points': result.grade_points,
-                    'result_status': result.result_status,
-                    'exam_date': result.exam_date,
-                    'is_revaluation': result.is_revaluation,
-                    'is_fail': is_fail,
-                    'summary': summary_dict.get(result.student_id),
-                })
-
-            subj_failed  = subj_appeared - subj_passed
-            subj_pass_pct = round(subj_passed / subj_appeared * 100, 1) if subj_appeared > 0 else 0.0
-            subject_stats = {
-                'appeared': subj_appeared,
-                'passed':   subj_passed,
-                'failed':   subj_failed,
-                'pass_pct': subj_pass_pct,
+            result_map = {
+                (r.student_id, r.subject_id): r
+                for r in end_sem_results
             }
-        except Subject.DoesNotExist:
-            pass
+
+            grade_points_map = {
+                'O': 10.0,
+                'A+': 9.0,
+                'A': 8.0,
+                'B+': 7.0,
+                'B': 6.0,
+                'C': 5.0,
+                'U': 0.0,
+                'AB': 0.0,
+            }
+
+            end_sem_rows = []
+            for student in students:
+                grades = []
+                credits_earned = 0
+                total_points = 0.0
+                absent_count = 0
+                arrear_count = 0
+
+                for subject in subjects_list:
+                    res = result_map.get((student.id, subject.pk))
+                    grade = res.grade.strip().upper() if res and res.grade else None
+                    status = res.result_status.strip().upper() if res and res.result_status else ''
+                    display_grade = grade or '—'
+
+                    if status == 'AB' or display_grade == 'AB':
+                        absent_count += 1
+                    if status == 'FAIL' or display_grade == 'U':
+                        arrear_count += 1
+
+                    gp = None
+                    if res and res.grade_points is not None:
+                        gp = float(res.grade_points)
+                    elif grade:
+                        gp = grade_points_map.get(grade)
+
+                    if gp is not None and display_grade not in ('U', 'AB') and status not in ('FAIL', 'AB'):
+                        total_points += gp * subject.credits
+                        credits_earned += subject.credits
+
+                    grades.append(display_grade)
+
+                sgpa = round(total_points / credits_earned, 2) if credits_earned > 0 else None
+                row = {
+                    'student': student,
+                    'reg_number': str(student.registration_number or ''),
+                    'grades': grades,
+                    'credits_earned': credits_earned if credits_earned > 0 else None,
+                    'total_points': round(total_points, 2) if credits_earned > 0 else None,
+                    'sgpa': sgpa,
+                    'absent_count': absent_count,
+                    'arrear_count': arrear_count,
+                    'total_arrear': arrear_count,
+                    'rank': None,
+                }
+                end_sem_rows.append(row)
+
+            # Assign rank based on SGPA (descending). Ties share the same rank.
+            ranked = [r for r in end_sem_rows if r.get('sgpa') is not None]
+            ranked.sort(key=lambda r: (-(r['sgpa'] or 0), r['student'].roll_number or ''))
+            last_sgpa = None
+            last_rank = 0
+            for idx, row in enumerate(ranked, 1):
+                if last_sgpa is None or row['sgpa'] != last_sgpa:
+                    last_rank = idx
+                    last_sgpa = row['sgpa']
+                row['rank'] = last_rank
+
+            results_data = end_sem_rows
     
     context = {
         'active_page': 'analytics',
@@ -1427,7 +1453,24 @@ def marks_update_api(request, result_id):
         if field not in data:
             continue
         raw = data[field]
-        if field in ('internal1', 'internal2', 'internal3', 'end_sem_marks', 'grade_points'):
+        if field in ('internal1', 'internal2', 'internal3'):
+            absent_field = f"{field}_absent"
+            if raw == '' or raw is None:
+                setattr(result, field, None)
+                setattr(result, absent_field, False)
+            else:
+                raw_str = str(raw).strip()
+                raw_up = raw_str.upper()
+                if raw_up in ('AB', 'A/B', 'ABS', 'ABSENT'):
+                    setattr(result, field, None)
+                    setattr(result, absent_field, True)
+                else:
+                    try:
+                        setattr(result, field, Decimal(raw_str))
+                    except InvalidOperation:
+                        return JsonResponse({'error': f'Invalid value for {field}: {raw!r}'}, status=400)
+                    setattr(result, absent_field, False)
+        elif field in ('end_sem_marks', 'grade_points'):
             if raw == '' or raw is None:
                 setattr(result, field, None)
             else:
